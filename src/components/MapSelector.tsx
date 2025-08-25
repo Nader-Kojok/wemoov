@@ -32,7 +32,7 @@ const MapSelector: React.FC<MapSelectorProps> = ({
   const marker = useRef<mapboxgl.Marker | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(initialLocation || null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
+
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showResults, setShowResults] = useState(false);
 
@@ -169,7 +169,6 @@ const MapSelector: React.FC<MapSelectorProps> = ({
       return;
     }
 
-    setIsSearching(true);
     try {
       const response = await fetch(
         `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${mapboxgl.accessToken}&limit=5`
@@ -181,8 +180,6 @@ const MapSelector: React.FC<MapSelectorProps> = ({
     } catch (error) {
       console.error('Search error:', error);
       setSearchResults([]);
-    } finally {
-      setIsSearching(false);
     }
   };
 
