@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent } from "@/components/ui/card"
 import { MapPin, Calendar, Clock, Users, Phone, Mail, User, Navigation, ArrowUpDown, Target, Map } from "lucide-react"
-import MapSelector from './MapSelector'
+import BookingMapSelector from './BookingMapSelector'
 
 interface BookingModalProps {
   open: boolean
@@ -182,11 +182,12 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, onOpenChange }
             {useMapView ? (
               /* Map View - Default */
               <div className="space-y-4">
-                <MapSelector
+                <BookingMapSelector
                   pickupLocation={bookingData.pickupLocation}
                   destination={bookingData.destination}
                   onPickupChange={(location) => updateBookingData('pickupLocation', location)}
                   onDestinationChange={(location) => updateBookingData('destination', location)}
+                  height="350px"
                 />
                 
                 {/* Option to switch to manual input */}
