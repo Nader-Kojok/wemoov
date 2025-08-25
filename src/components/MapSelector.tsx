@@ -88,26 +88,52 @@ const MapSelector: React.FC<MapSelectorProps> = ({
         console.error('Mapbox error:', e.error)
         console.error('Error details:', e)
         
-        // Check if it's a token/authentication error
-        const isTokenError = e.error?.message?.includes('token') || 
-                            e.error?.message?.includes('401') || 
-                            e.error?.message?.includes('Unauthorized')
+        // Type the error object properly for Mapbox errors
+        const mapboxError = e.error as any
+        
+        // Check if it's a token/authentication error (403, 401, or token-related)
+        const isTokenError = mapboxError?.status === 403 || 
+                            mapboxError?.status === 401 || 
+                            mapboxError?.message?.includes('token') || 
+                            mapboxError?.message?.includes('Unauthorized') ||
+                            mapboxError?.message?.includes('Forbidden')
+        
+        // Check if it's specifically a URL restriction error (403 on tile requests)
+        const isUrlRestrictionError = mapboxError?.status === 403 && 
+                                     mapboxError?.url?.includes('api.mapbox.com')
         
         // Fallback: show a detailed error message
         if (mapContainer.current) {
+          const errorTitle = isUrlRestrictionError ? 
+            'Erreur d\'autorisation Mapbox' : 
+            (isTokenError ? 'Erreur d\'authentification Mapbox' : 'Carte temporairement indisponible')
+          
+          const errorMessage = isUrlRestrictionError ?
+            'Le domaine actuel n\'est pas autorisé pour ce token Mapbox' :
+            (isTokenError ? 'Le token Mapbox a des restrictions d\'URL' : 'Utilisez la recherche d\'adresses ci-dessus')
+          
+          const errorHelp = isUrlRestrictionError ?
+            'Ajoutez votre domaine Vercel dans console.mapbox.com → Token → URL restrictions' :
+            (isTokenError ? 'Configurez les URL autorisées sur console.mapbox.com' : '')
+        
           mapContainer.current.innerHTML = `
             <div style="display: flex; align-items: center; justify-content: center; height: 100%; background: #f3f4f6; color: #6b7280; text-align: center; padding: 20px;">
               <div>
                 <div style="font-size: 48px; margin-bottom: 16px;">🗺️</div>
                 <div style="font-weight: 600; margin-bottom: 8px; color: #ef4444;">
-                  ${isTokenError ? 'Erreur d\'authentification Mapbox' : 'Carte temporairement indisponible'}
+                  ${errorTitle}
                 </div>
                 <div style="font-size: 14px; margin-bottom: 8px;">
-                  ${isTokenError ? 'Le token Mapbox a des restrictions d\'URL' : 'Utilisez la recherche d\'adresses ci-dessus'}
+                  ${errorMessage}
                 </div>
-                <div style="font-size: 12px; color: #9ca3af;">
-                  ${isTokenError ? 'Configurez les URL autorisées sur console.mapbox.com' : ''}
+                <div style="font-size: 12px; color: #9ca3af; line-height: 1.4;">
+                  ${errorHelp}
                 </div>
+                ${isUrlRestrictionError ? `
+                <div style="margin-top: 12px; padding: 8px; background: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; font-size: 11px; color: #92400e;">
+                  <strong>Solution:</strong> Ajoutez <code style="background: #fff; padding: 2px 4px; border-radius: 3px;">${window.location.origin}</code> aux URL autorisées
+                </div>
+                ` : ''}
               </div>
             </div>
           `
