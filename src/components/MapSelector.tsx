@@ -41,17 +41,7 @@ const MapSelector: React.FC<MapSelectorProps> = ({
   const [activeInput, setActiveInput] = useState<'pickup' | 'destination' | null>(null)
   const [showResults, setShowResults] = useState(false)
 
-  // Predefined locations for Senegal
-  const popularLocations: LocationResult[] = [
-    { display_name: "Aéroport International Blaise Diagne (AIBD)", lat: "14.6700", lon: "-17.0732", place_type: "airport" },
-    { display_name: "Plateau - Centre-ville de Dakar", lat: "14.6928", lon: "-17.4467", place_type: "district" },
-    { display_name: "Almadies", lat: "14.7392", lon: "-17.5297", place_type: "district" },
-    { display_name: "Medina - Dakar", lat: "14.6892", lon: "-17.4581", place_type: "district" },
-    { display_name: "Point E - Dakar", lat: "14.7167", lon: "-17.4500", place_type: "district" },
-    { display_name: "Parcelles Assainies", lat: "14.7833", lon: "-17.4167", place_type: "district" },
-    { display_name: "Thiès", lat: "14.7889", lon: "-16.9261", place_type: "city" },
-    { display_name: "Saint-Louis", lat: "16.0333", lon: "-16.5000", place_type: "city" }
-  ]
+
 
   // Initialize map
   useEffect(() => {
@@ -68,7 +58,7 @@ const MapSelector: React.FC<MapSelectorProps> = ({
       // Add navigation controls
       map.current.addControl(new mapboxgl.NavigationControl(), 'top-right')
 
-      // Handle map click for destination selection
+      // Handle map click for location selection
       map.current.on('click', (e) => {
         if (activeInput) {
           const { lng, lat } = e.lngLat
@@ -81,6 +71,9 @@ const MapSelector: React.FC<MapSelectorProps> = ({
           }
           
           setActiveInput(null)
+          setSearchQuery('')
+          setSearchResults([])
+          setShowResults(false)
           map.current!.getCanvas().style.cursor = ''
         }
       })
@@ -218,20 +211,14 @@ const MapSelector: React.FC<MapSelectorProps> = ({
         })) || []
         setSearchResults(results)
       } else {
-        // Fallback to local search
-        const localResults = popularLocations.filter(location => 
-          location.display_name.toLowerCase().includes(query.toLowerCase())
-        )
-        setSearchResults(localResults)
-      }
+         // No results from API
+         setSearchResults([])
+       }
     } catch (error) {
-      console.error('Search error:', error)
-      // Fallback to local search
-      const localResults = popularLocations.filter(location => 
-        location.display_name.toLowerCase().includes(query.toLowerCase())
-      )
-      setSearchResults(localResults)
-    } finally {
+       console.error('Search error:', error)
+       // No fallback results
+       setSearchResults([])
+     } finally {
       setIsSearching(false)
     }
   }
@@ -330,28 +317,36 @@ const MapSelector: React.FC<MapSelectorProps> = ({
               Point de départ
             </Label>
             <div className="flex gap-2">
-              <Input
-                placeholder="Cliquez pour sélectionner ou rechercher..."
-                value={activeInput === 'pickup' ? searchQuery : (pickupLocation ? `${parseCoordinates(pickupLocation)?.[0].toFixed(4)}, ${parseCoordinates(pickupLocation)?.[1].toFixed(4)}` : '')}
-                onChange={(e) => {
-                  if (activeInput === 'pickup') {
-                    setSearchQuery(e.target.value)
-                    setShowResults(true)
-                  }
-                }}
-                onFocus={() => {
-                  setActiveInput('pickup')
-                  setSearchQuery('')
-                  setShowResults(true)
-                }}
-                className="flex-1"
-              />
+              <div className="flex-1 relative">
+                <Input
+                  placeholder={activeInput === 'pickup' ? "Tapez une adresse ou cliquez sur la carte" : (pickupLocation ? `Lat: ${parseCoordinates(pickupLocation)?.[0].toFixed(4)}, Lng: ${parseCoordinates(pickupLocation)?.[1].toFixed(4)}` : "Cliquez ici puis sur la carte")}
+                  value={activeInput === 'pickup' ? searchQuery : ''}
+                  onChange={(e) => {
+                    if (activeInput === 'pickup') {
+                      setSearchQuery(e.target.value)
+                      setShowResults(true)
+                    }
+                  }}
+                  onFocus={() => {
+                    setActiveInput('pickup')
+                    setSearchQuery('')
+                    setShowResults(false)
+                  }}
+                  className={`${activeInput === 'pickup' ? 'ring-2 ring-green-500 border-green-500' : ''} ${pickupLocation ? 'bg-green-50 text-green-800' : ''}`}
+                />
+                {activeInput === 'pickup' && (
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  </div>
+                )}
+              </div>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 onClick={getCurrentLocation}
-                className="shrink-0"
+                className="shrink-0 hover:bg-green-50 hover:border-green-300"
+                title="Utiliser ma position actuelle"
               >
                 <Navigation className="h-4 w-4" />
               </Button>
@@ -364,21 +359,29 @@ const MapSelector: React.FC<MapSelectorProps> = ({
               <MapPin className="h-4 w-4 text-red-600" />
               Destination
             </Label>
-            <Input
-              placeholder="Cliquez pour sélectionner ou rechercher..."
-              value={activeInput === 'destination' ? searchQuery : (destination ? `${parseCoordinates(destination)?.[0].toFixed(4)}, ${parseCoordinates(destination)?.[1].toFixed(4)}` : '')}
-              onChange={(e) => {
-                if (activeInput === 'destination') {
-                  setSearchQuery(e.target.value)
-                  setShowResults(true)
-                }
-              }}
-              onFocus={() => {
-                setActiveInput('destination')
-                setSearchQuery('')
-                setShowResults(true)
-              }}
-            />
+            <div className="relative">
+              <Input
+                placeholder={activeInput === 'destination' ? "Tapez une adresse ou cliquez sur la carte" : (destination ? `Lat: ${parseCoordinates(destination)?.[0].toFixed(4)}, Lng: ${parseCoordinates(destination)?.[1].toFixed(4)}` : "Cliquez ici puis sur la carte")}
+                value={activeInput === 'destination' ? searchQuery : ''}
+                onChange={(e) => {
+                  if (activeInput === 'destination') {
+                    setSearchQuery(e.target.value)
+                    setShowResults(true)
+                  }
+                }}
+                onFocus={() => {
+                  setActiveInput('destination')
+                  setSearchQuery('')
+                  setShowResults(false)
+                }}
+                className={`${activeInput === 'destination' ? 'ring-2 ring-red-500 border-red-500' : ''} ${destination ? 'bg-red-50 text-red-800' : ''}`}
+              />
+              {activeInput === 'destination' && (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Action Buttons */}
@@ -415,60 +418,63 @@ const MapSelector: React.FC<MapSelectorProps> = ({
 
           {/* Instructions */}
           {activeInput && (
-            <div className="text-sm text-blue-600 bg-blue-50 p-3 rounded-lg">
-              {activeInput === 'pickup' ? 
-                '📍 Sélectionnez votre point de départ en cliquant sur la carte ou en recherchant une adresse' :
-                '🎯 Sélectionnez votre destination en cliquant sur la carte ou en recherchant une adresse'
-              }
+            <div className={`text-sm p-3 rounded-lg border-2 border-dashed ${activeInput === 'pickup' ? 'text-green-700 bg-green-50 border-green-300' : 'text-red-700 bg-red-50 border-red-300'}`}>
+              <div className="flex items-center gap-2 font-medium mb-1">
+                {activeInput === 'pickup' ? '🟢' : '🔴'}
+                Mode sélection {activeInput === 'pickup' ? 'DÉPART' : 'DESTINATION'} activé
+              </div>
+              <div className="text-xs">
+                Cliquez n'importe où sur la carte pour placer votre point
+              </div>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Search Results */}
-      {(showResults && activeInput && (searchResults.length > 0 || (!searchQuery && popularLocations.length > 0))) && (
-        <Card>
-          <CardContent className="p-4">
-            <div className="space-y-2 max-h-60 overflow-y-auto">
-              <Label className="text-sm font-medium flex items-center gap-2">
-                <Search className="h-4 w-4" />
-                {searchQuery ? 'Résultats de recherche' : 'Lieux populaires'}
-                {isSearching && <div className="animate-spin h-4 w-4 border-2 border-gray-300 border-t-blue-600 rounded-full" />}
-              </Label>
-              
-              {(searchQuery ? searchResults : popularLocations.slice(0, 8)).map((result, index) => {
-                const getIcon = (type?: string) => {
-                  switch(type) {
-                    case 'airport': return '✈️'
-                    case 'district': return '🏙️'
-                    case 'city': return '🏘️'
-                    case 'transport': return '🚌'
-                    default: return '📍'
-                  }
-                }
-                
-                return (
-                  <button
-                    key={index}
-                    onClick={() => selectLocation(result)}
-                    className="w-full text-left p-3 hover:bg-gray-50 rounded-lg border border-transparent hover:border-gray-200 transition-colors flex items-center gap-3"
-                  >
-                    <span className="text-lg">{getIcon(result.place_type)}</span>
-                    <div className="flex-1">
-                      <div className="font-medium text-sm text-gray-900">
-                        {result.display_name}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {parseFloat(result.lat).toFixed(4)}, {parseFloat(result.lon).toFixed(4)}
-                      </div>
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Search Results - Only show when searching */}
+       {(showResults && activeInput && searchQuery && searchResults.length > 0) && (
+         <Card className="border-l-4 border-l-blue-500">
+           <CardContent className="p-4">
+             <div className="space-y-2 max-h-48 overflow-y-auto">
+               <Label className="text-sm font-medium flex items-center gap-2 text-blue-700">
+                 <Search className="h-4 w-4" />
+                 Résultats de recherche
+                 {isSearching && <div className="animate-spin h-4 w-4 border-2 border-gray-300 border-t-blue-600 rounded-full" />}
+               </Label>
+               
+               {searchResults.map((result, index) => {
+                 const getIcon = (type?: string) => {
+                   switch(type) {
+                     case 'airport': return '✈️'
+                     case 'district': return '🏙️'
+                     case 'city': return '🏘️'
+                     case 'transport': return '🚌'
+                     default: return '📍'
+                   }
+                 }
+                 
+                 return (
+                   <button
+                     key={index}
+                     onClick={() => selectLocation(result)}
+                     className="w-full text-left p-2 hover:bg-blue-50 rounded border border-transparent hover:border-blue-200 transition-colors flex items-center gap-2"
+                   >
+                     <span className="text-sm">{getIcon(result.place_type)}</span>
+                     <div className="flex-1 min-w-0">
+                       <div className="font-medium text-sm text-gray-900 truncate">
+                         {result.display_name}
+                       </div>
+                       <div className="text-xs text-gray-500">
+                         {parseFloat(result.lat).toFixed(4)}, {parseFloat(result.lon).toFixed(4)}
+                       </div>
+                     </div>
+                   </button>
+                 )
+               })}
+             </div>
+           </CardContent>
+         </Card>
+       )}
 
       {/* Map */}
       <Card>
