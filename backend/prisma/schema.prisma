@@ -1,0 +1,188 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Modèle Utilisateur
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  phone     String   @unique
+  firstName String
+  lastName  String
+  password  String
+  role      UserRole @default(CLIENT)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  bookings Booking[]
+  driver   Driver?
+  payments Payment[]
+
+  @@map("users")
+}
+
+// Modèle Chauffeur
+model Driver {
+  id            String  @id @default(cuid())
+  userId        String  @unique
+  licenseNumber String  @unique
+  vehicleId     String?
+  isAvailable   Boolean @default(true)
+  rating        Float   @default(0)
+  totalRides    Int     @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicle  Vehicle?  @relation(fields: [vehicleId], references: [id])
+  bookings Booking[]
+
+  @@map("drivers")
+}
+
+// Modèle Véhicule
+model Vehicle {
+  id               String      @id @default(cuid())
+  type             VehicleType
+  brand            String
+  model            String
+  year             Int
+  licensePlate     String      @unique
+  capacity         Int
+  priceMultiplier  Float       @default(1.0)
+  isAvailable      Boolean     @default(true)
+  features         String[]    // JSON array of features
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  // Relations
+  drivers  Driver[]
+  bookings Booking[]
+
+  @@map("vehicles")
+}
+
+// Modèle Réservation
+model Booking {
+  id              String        @id @default(cuid())
+  userId          String
+  driverId        String?
+  vehicleId       String?
+  serviceType     ServiceType
+  pickupLocation  String
+  pickupLat       Float?
+  pickupLng       Float?
+  destination     String
+  destinationLat  Float?
+  destinationLng  Float?
+  scheduledDate   DateTime
+  scheduledTime   String
+  passengers      Int
+  status          BookingStatus @default(PENDING)
+  totalPrice      Float
+  distance        Float?        // en kilomètres
+  duration        Int?          // en minutes
+  specialRequests String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Relations
+  user     User      @relation(fields: [userId], references: [id])
+  driver   Driver?   @relation(fields: [driverId], references: [id])
+  vehicle  Vehicle?  @relation(fields: [vehicleId], references: [id])
+  payments Payment[]
+
+  @@map("bookings")
+}
+
+// Modèle Paiement
+model Payment {
+  id            String        @id @default(cuid())
+  bookingId     String
+  userId        String
+  amount        Float
+  currency      String        @default("FCFA")
+  method        PaymentMethod
+  status        PaymentStatus @default(PENDING)
+  transactionId String?       @unique
+  phoneNumber   String?       // Pour les paiements mobiles
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Relations
+  booking Booking @relation(fields: [bookingId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@map("payments")
+}
+
+// Modèle Service
+model Service {
+  id          String  @id @default(cuid())
+  name        String
+  description String
+  basePrice   Float?
+  icon        String?
+  isActive    Boolean @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("services")
+}
+
+// Énumérations
+enum UserRole {
+  CLIENT
+  DRIVER
+  ADMIN
+}
+
+enum VehicleType {
+  SEDAN
+  SUV
+  VAN
+  LUXURY
+}
+
+enum ServiceType {
+  AIRPORT
+  CITY
+  INTERCITY
+  HOURLY
+  EVENT
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  WAVE
+  ORANGE_MONEY
+  CASH
+  CARD
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
