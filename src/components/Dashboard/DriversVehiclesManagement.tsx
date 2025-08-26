@@ -10,7 +10,7 @@ import VehiclesTable from './tables/VehiclesTable';
 import DriverForm from './forms/DriverForm';
 import VehicleForm from './forms/VehicleForm';
 import VehicleAssignmentModal from './modals/VehicleAssignmentModal';
-import { NotificationProvider, useNotifications } from './shared/NotificationSystem';
+import { NotificationProvider } from './shared/NotificationSystem';
 
 // Import types
 import type { 

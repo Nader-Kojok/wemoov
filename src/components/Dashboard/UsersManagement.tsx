@@ -233,14 +233,6 @@ const UsersManagementContent: React.FC = () => {
     }
   };
 
-  const getRoleIcon = (role: string) => {
-    switch (role) {
-      case 'ADMIN': return <Shield className="h-4 w-4" />;
-      case 'DRIVER': return <Car className="h-4 w-4" />;
-      default: return <User className="h-4 w-4" />;
-    }
-  };
-
   const getRoleBadge = (role: string) => {
     const baseClasses = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium";
     switch (role) {

@@ -1,22 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import {
   Search,
-  Eye,
   UserCheck,
   Clock,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-  MapPin,
-  Calendar,
-  Users,
-  Car,
-  Phone,
   Plus,
-  Edit,
-  Trash2,
-  X,
-  UserX,
+  Calendar,
   AlertTriangle,
   CheckCircle2
 } from 'lucide-react';
@@ -91,11 +79,10 @@ const BookingsManagementContent: React.FC = () => {
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [showAssignModal, setShowAssignModal] = useState(false);
-  const [selectedDriver, setSelectedDriver] = useState('');
+
   const [showCreateEditModal, setShowCreateEditModal] = useState(false);
   const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
   const [users, setUsers] = useState<any[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     fetchBookings();
@@ -220,7 +207,7 @@ const BookingsManagementContent: React.FC = () => {
 
       setShowAssignModal(false);
       setSelectedBooking(null);
-      setSelectedDriver('');
+
       fetchBookings();
     } catch (err) {
       showError(
@@ -546,7 +533,6 @@ const BookingsManagementContent: React.FC = () => {
         isOpen={showAssignModal}
         onClose={() => {
           setShowAssignModal(false);
-          setSelectedDriver('');
         }}
         booking={selectedBooking}
         availableDrivers={availableDrivers}

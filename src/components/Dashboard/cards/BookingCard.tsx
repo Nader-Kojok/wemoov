@@ -13,8 +13,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   XCircle,
-  PlayCircle,
-  PauseCircle
+  PlayCircle
 } from 'lucide-react';
 
 interface Booking {

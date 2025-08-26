@@ -150,7 +150,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, onOpenChange }
 
       // Vérifier que tous les champs requis sont remplis
       const missingFields = Object.entries(requiredFields)
-        .filter(([key, value]) => !value || value.toString().trim() === '')
+        .filter(([, value]) => !value || value.toString().trim() === '')
         .map(([key]) => key)
 
       if (missingFields.length > 0) {
