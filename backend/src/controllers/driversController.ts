@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { prisma } from '../utils/database.js';
-import { ApiResponse } from '../types/index.js';
+import { prisma } from '../utils/database';
+import { ApiResponse } from '../types/index';
 
 // Liste des chauffeurs avec pagination et filtres
 export const getDrivers = async (req: Request, res: Response) => {

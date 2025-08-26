@@ -23,8 +23,8 @@ import {
   updateVehicle,
   deleteVehicle,
   getRevenueStats
-} from '../controllers/dashboardController.js';
-import { protect, authorize } from '../middleware/auth.js';
+} from '../controllers/dashboardController';
+import { protect, authorize } from '../middleware/auth';
 
 const router = Router();
 

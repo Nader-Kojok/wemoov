@@ -5,21 +5,21 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 
 // Import des routes
-import authRoutes from './routes/auth.js';
-import bookingRoutes from './routes/bookings.js';
-import publicBookingRoutes from './routes/publicBookings.js';
-import userRoutes from './routes/users.js';
-import serviceRoutes from './routes/services.js';
-import vehicleRoutes from './routes/vehicles.js';
-import paymentRoutes from './routes/payments.js';
-import geocodingRoutes from './routes/geocoding.js';
-import dashboardRoutes from './routes/dashboard.js';
-import driversRoutes from './routes/drivers.js';
+import authRoutes from './routes/auth';
+import bookingRoutes from './routes/bookings';
+import publicBookingRoutes from './routes/publicBookings';
+import userRoutes from './routes/users';
+import serviceRoutes from './routes/services';
+import vehicleRoutes from './routes/vehicles';
+import paymentRoutes from './routes/payments';
+import geocodingRoutes from './routes/geocoding';
+import dashboardRoutes from './routes/dashboard';
+import driversRoutes from './routes/drivers';
 
 // Import des middlewares
-import { errorHandler } from './middleware/errorHandler.js';
-import { notFound } from './middleware/notFound.js';
-import { rateLimiter } from './middleware/rateLimiter.js';
+import { errorHandler } from './middleware/errorHandler';
+import { notFound } from './middleware/notFound';
+import { rateLimiter } from './middleware/rateLimiter';
 
 // Configuration des variables d'environnement
 dotenv.config();

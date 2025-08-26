@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
-import { prisma } from '../utils/database.js';
-import { validateBookingData, isValidId } from '../utils/validation.js';
-import { CreateBookingRequest, UpdateBookingRequest, ApiResponse, PaginationOptions, FilterOptions } from '../types/index.js';
+import { prisma } from '../utils/database';
+import { validateBookingData, isValidId } from '../utils/validation';
+import { CreateBookingRequest, UpdateBookingRequest, ApiResponse, PaginationOptions, FilterOptions } from '../types/index';
 
 // Créer une nouvelle réservation
 export const createBooking = async (req: Request, res: Response) => {

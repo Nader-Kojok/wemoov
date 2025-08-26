@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
-import { prisma } from '../utils/database.js';
-import { ApiResponse } from '../types/index.js';
-import { cache, CACHE_KEYS, CACHE_TTL } from '../utils/cache.js';
+import { prisma } from '../utils/database';
+import { ApiResponse } from '../types/index';
+import { cache, CACHE_KEYS, CACHE_TTL } from '../utils/cache';
 
 // Statistiques générales du dashboard
 export const getDashboardStats = async (req: Request, res: Response) => {

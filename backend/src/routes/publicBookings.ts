@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { createPublicBooking, getPublicBookingStatus } from '../controllers/publicBookingController.js';
-import { rateLimiter } from '../middleware/rateLimiter.js';
+import { createPublicBooking, getPublicBookingStatus } from '../controllers/publicBookingController';
+import { rateLimiter } from '../middleware/rateLimiter';
 
 const router = Router();
 
