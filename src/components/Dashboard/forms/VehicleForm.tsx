@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
+import { useNotifications } from '../shared/NotificationSystem';
 import type { Vehicle, VehicleFormData, VehicleType } from '../../../types/dashboard';
 
 interface VehicleFormProps {
@@ -28,6 +29,8 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
 
   const [errors, setErrors] = useState<Partial<Record<keyof VehicleFormData, string>>>({});
   const [newFeature, setNewFeature] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { showError, showSuccess } = useNotifications();
 
   const vehicleTypes: { value: VehicleType; label: string }[] = [
     { value: 'SEDAN', label: 'Berline' },
@@ -79,6 +82,8 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
       newErrors.licensePlate = 'La plaque d\'immatriculation est requise';
     } else if (formData.licensePlate.length < 6) {
       newErrors.licensePlate = 'La plaque doit contenir au moins 6 caractères';
+    } else if (!/^[A-Z0-9\-\s]+$/i.test(formData.licensePlate)) {
+      newErrors.licensePlate = 'La plaque contient des caractères invalides';
     }
 
     if (formData.year < 1990 || formData.year > new Date().getFullYear() + 1) {
@@ -101,13 +106,25 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
     e.preventDefault();
     
     if (!validateForm()) {
+      showError('Erreur de validation', 'Veuillez corriger les erreurs dans le formulaire');
       return;
     }
 
+    setIsSubmitting(true);
     try {
       await onSubmit(formData);
+      showSuccess(
+        vehicle ? 'Véhicule modifié' : 'Véhicule créé',
+        vehicle ? 'Les informations du véhicule ont été mises à jour avec succès' : 'Le nouveau véhicule a été créé avec succès'
+      );
     } catch (error) {
       console.error('Erreur lors de la soumission:', error);
+      showError(
+        'Erreur de sauvegarde',
+        error instanceof Error ? error.message : 'Une erreur inattendue s\'est produite'
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -148,7 +165,7 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
             value={formData.type}
             onChange={(e) => handleInputChange('type', e.target.value as VehicleType)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            disabled={isLoading}
+            disabled={isLoading || isSubmitting}
           >
             {vehicleTypes.map(type => (
               <option key={type.value} value={type.value}>
@@ -168,11 +185,11 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
             required
             value={formData.brand}
             onChange={(e) => handleInputChange('brand', e.target.value)}
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400 ${
               errors.brand ? 'border-red-300' : 'border-gray-300'
             }`}
             placeholder="Ex: Toyota, BMW, Mercedes"
-            disabled={isLoading}
+            disabled={isLoading || isSubmitting}
           />
           {errors.brand && (
             <p className="mt-1 text-sm text-red-600">{errors.brand}</p>
@@ -189,11 +206,11 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
             required
             value={formData.model}
             onChange={(e) => handleInputChange('model', e.target.value)}
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400 ${
               errors.model ? 'border-red-300' : 'border-gray-300'
             }`}
             placeholder="Ex: Camry, X5, E-Class"
-            disabled={isLoading}
+            disabled={isLoading || isSubmitting}
           />
           {errors.model && (
             <p className="mt-1 text-sm text-red-600">{errors.model}</p>
@@ -215,7 +232,7 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
             className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               errors.year ? 'border-red-300' : 'border-gray-300'
             }`}
-            disabled={isLoading}
+            disabled={isLoading || isSubmitting}
           />
           {errors.year && (
             <p className="mt-1 text-sm text-red-600">{errors.year}</p>
@@ -232,11 +249,11 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
             required
             value={formData.licensePlate}
             onChange={(e) => handleInputChange('licensePlate', e.target.value.toUpperCase())}
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400 ${
               errors.licensePlate ? 'border-red-300' : 'border-gray-300'
             }`}
             placeholder="Ex: ABC-123"
-            disabled={isLoading}
+            disabled={isLoading || isSubmitting}
           />
           {errors.licensePlate && (
             <p className="mt-1 text-sm text-red-600">{errors.licensePlate}</p>
@@ -258,7 +275,7 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
             className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               errors.capacity ? 'border-red-300' : 'border-gray-300'
             }`}
-            disabled={isLoading}
+            disabled={isLoading || isSubmitting}
           />
           {errors.capacity && (
             <p className="mt-1 text-sm text-red-600">{errors.capacity}</p>
@@ -286,7 +303,7 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
                     ? 'bg-blue-100 text-blue-800 border-blue-300 cursor-not-allowed'
                     : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'
                 }`}
-                disabled={formData.features.includes(feature) || isLoading}
+                disabled={formData.features.includes(feature) || isLoading || isSubmitting}
               >
                 {feature}
               </button>
@@ -301,15 +318,15 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
             value={newFeature}
             onChange={(e) => setNewFeature(e.target.value)}
             placeholder="Ajouter un équipement personnalisé"
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            disabled={isLoading}
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
+            disabled={isLoading || isSubmitting}
             onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddNewFeature())}
           />
           <button
             type="button"
             onClick={handleAddNewFeature}
             className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
-            disabled={isLoading}
+            disabled={isLoading || isSubmitting}
           >
             Ajouter
           </button>
@@ -330,7 +347,7 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
                     type="button"
                     onClick={() => removeFeature(feature)}
                     className="ml-2 text-blue-600 hover:text-blue-800"
-                    disabled={isLoading}
+                    disabled={isLoading || isSubmitting}
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -347,16 +364,16 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
           type="button"
           onClick={onCancel}
           className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          disabled={isLoading}
+          disabled={isLoading || isSubmitting}
         >
           Annuler
         </button>
         <button
           type="submit"
           className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={isLoading}
+          disabled={isLoading || isSubmitting}
         >
-          {isLoading ? 'En cours...' : (vehicle ? 'Modifier' : 'Créer')}
+          {(isLoading || isSubmitting) ? 'En cours...' : (vehicle ? 'Modifier' : 'Créer')}
         </button>
       </div>
     </form>

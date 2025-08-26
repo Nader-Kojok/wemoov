@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNotifications } from '../shared/NotificationSystem';
 import type { Driver, DriverFormData, User, Vehicle } from '../../../types/dashboard';
 
 interface DriverFormProps {
@@ -25,6 +26,8 @@ const DriverForm: React.FC<DriverFormProps> = ({
   });
 
   const [errors, setErrors] = useState<Partial<DriverFormData>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { showError, showSuccess } = useNotifications();
 
   useEffect(() => {
     if (driver) {
@@ -47,6 +50,16 @@ const DriverForm: React.FC<DriverFormProps> = ({
       newErrors.licenseNumber = 'Le numéro de permis est requis';
     } else if (formData.licenseNumber.length < 5) {
       newErrors.licenseNumber = 'Le numéro de permis doit contenir au moins 5 caractères';
+    } else if (!/^[A-Z0-9\-\s]+$/i.test(formData.licenseNumber)) {
+      newErrors.licenseNumber = 'Le numéro de permis contient des caractères invalides';
+    }
+
+    // Check if user is already a driver (for new drivers only)
+    if (!driver && formData.userId) {
+      const selectedUser = users.find(u => u.id === formData.userId);
+      if (selectedUser?.driver) {
+        newErrors.userId = 'Cet utilisateur est déjà un chauffeur';
+      }
     }
 
     setErrors(newErrors);
@@ -57,13 +70,25 @@ const DriverForm: React.FC<DriverFormProps> = ({
     e.preventDefault();
     
     if (!validateForm()) {
+      showError('Erreur de validation', 'Veuillez corriger les erreurs dans le formulaire');
       return;
     }
 
+    setIsSubmitting(true);
     try {
       await onSubmit(formData);
+      showSuccess(
+        driver ? 'Chauffeur modifié' : 'Chauffeur créé',
+        driver ? 'Les informations du chauffeur ont été mises à jour avec succès' : 'Le nouveau chauffeur a été créé avec succès'
+      );
     } catch (error) {
       console.error('Erreur lors de la soumission:', error);
+      showError(
+        'Erreur de sauvegarde',
+        error instanceof Error ? error.message : 'Une erreur inattendue s\'est produite'
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -76,7 +101,7 @@ const DriverForm: React.FC<DriverFormProps> = ({
   };
 
   const availableUsers = users.filter(user => 
-    user.role === 'CLIENT' && 
+    (user.role === 'CLIENT' || user.role === 'DRIVER') && 
     (!user.driver || (driver && user.id === driver.user.id))
   );
 
@@ -94,7 +119,7 @@ const DriverForm: React.FC<DriverFormProps> = ({
           className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
             errors.userId ? 'border-red-300' : 'border-gray-300'
           }`}
-          disabled={!!driver || isLoading}
+          disabled={!!driver || isLoading || isSubmitting}
         >
           <option value="">Sélectionner un utilisateur</option>
           {availableUsers.map(user => (
@@ -118,11 +143,11 @@ const DriverForm: React.FC<DriverFormProps> = ({
           required
           value={formData.licenseNumber}
           onChange={(e) => handleInputChange('licenseNumber', e.target.value)}
-          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400 ${
             errors.licenseNumber ? 'border-red-300' : 'border-gray-300'
           }`}
           placeholder="Numéro de permis de conduire"
-          disabled={isLoading}
+          disabled={isLoading || isSubmitting}
         />
         {errors.licenseNumber && (
           <p className="mt-1 text-sm text-red-600">{errors.licenseNumber}</p>
@@ -138,7 +163,7 @@ const DriverForm: React.FC<DriverFormProps> = ({
           value={formData.vehicleId}
           onChange={(e) => handleInputChange('vehicleId', e.target.value)}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          disabled={isLoading}
+          disabled={isLoading || isSubmitting}
         >
           <option value="">Aucun véhicule assigné</option>
           {vehicles.map(vehicle => (
@@ -155,16 +180,16 @@ const DriverForm: React.FC<DriverFormProps> = ({
           type="button"
           onClick={onCancel}
           className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          disabled={isLoading}
+          disabled={isLoading || isSubmitting}
         >
           Annuler
         </button>
         <button
           type="submit"
           className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={isLoading}
+          disabled={isLoading || isSubmitting}
         >
-          {isLoading ? 'En cours...' : (driver ? 'Modifier' : 'Créer')}
+          {(isLoading || isSubmitting) ? 'En cours...' : (driver ? 'Modifier' : 'Créer')}
         </button>
       </div>
     </form>

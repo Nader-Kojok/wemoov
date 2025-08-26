@@ -12,6 +12,7 @@ import {
   updateBooking,
   deleteBooking,
   assignDriver,
+  unassignDriver,
   getAvailableDrivers,
   getDrivers,
   createDriver,
@@ -48,6 +49,7 @@ router.post('/bookings', createBooking);
 router.put('/bookings/:id', updateBooking);
 router.delete('/bookings/:id', deleteBooking);
 router.patch('/bookings/:bookingId/assign', assignDriver);
+router.patch('/bookings/:bookingId/unassign', unassignDriver);
 
 // Gestion des chauffeurs
 router.get('/drivers', getDrivers);

@@ -12,9 +12,12 @@ import {
   Shield,
   Plus,
   Edit,
-  Trash2,
-  X
+  Trash2
 } from 'lucide-react';
+import { useDebounce } from '../../hooks/useDebounce';
+import Modal from './shared/Modal';
+import UserForm from './forms/UserForm';
+import { NotificationProvider, useNotifications } from './shared/NotificationSystem';
 
 interface User {
   id: string;
@@ -25,9 +28,19 @@ interface User {
   role: 'CLIENT' | 'DRIVER' | 'ADMIN';
   isActive: boolean;
   createdAt: string;
+  driver?: any;
   _count: {
     bookings: number;
   };
+}
+
+interface UserFormData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  password: string;
+  role: 'CLIENT' | 'DRIVER' | 'ADMIN';
 }
 
 interface UsersResponse {
@@ -41,29 +54,25 @@ interface UsersResponse {
   };
 }
 
-const UsersManagement: React.FC = () => {
+const UsersManagementContent: React.FC = () => {
+  const { showError, showSuccess } = useNotifications();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [roleFilter, setRoleFilter] = useState<string>('');
+  const [roleFilter, setRoleFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showUserModal, setShowUserModal] = useState(false);
   const [showCreateEditModal, setShowCreateEditModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    password: '',
-    role: 'CLIENT' as 'CLIENT' | 'DRIVER' | 'ADMIN'
-  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
   useEffect(() => {
     fetchUsers();
-  }, [currentPage, roleFilter, searchTerm]);
+  }, [currentPage, roleFilter, debouncedSearchTerm]);
 
   const fetchUsers = async () => {
     try {
@@ -75,7 +84,7 @@ const UsersManagement: React.FC = () => {
       });
       
       if (roleFilter) params.append('role', roleFilter);
-      if (searchTerm) params.append('search', searchTerm);
+      if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
 
       const response = await fetch(`/api/dashboard/users?${params}`, {
         headers: {
@@ -84,14 +93,14 @@ const UsersManagement: React.FC = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Erreur lors du chargement des utilisateurs');
+        throw new Error('Erreur lors de la récupération des utilisateurs');
       }
 
       const data: UsersResponse = await response.json();
       setUsers(data.data);
       setTotalPages(data.pagination.totalPages);
     } catch (err) {
-      console.error('Erreur lors du chargement des utilisateurs:', err);
+      showError('Erreur', err instanceof Error ? err.message : 'Une erreur est survenue');
     } finally {
       setLoading(false);
     }
@@ -99,27 +108,11 @@ const UsersManagement: React.FC = () => {
 
   const handleCreateUser = () => {
     setEditingUser(null);
-    setFormData({
-      firstName: '',
-      lastName: '',
-      email: '',
-      phone: '',
-      password: '',
-      role: 'CLIENT'
-    });
     setShowCreateEditModal(true);
   };
 
   const handleEditUser = (user: User) => {
     setEditingUser(user);
-    setFormData({
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      phone: user.phone,
-      password: '',
-      role: user.role
-    });
     setShowCreateEditModal(true);
   };
 
@@ -141,15 +134,15 @@ const UsersManagement: React.FC = () => {
         throw new Error('Erreur lors de la suppression de l\'utilisateur');
       }
 
+      showSuccess('Utilisateur supprimé', 'L\'utilisateur a été supprimé avec succès');
       fetchUsers();
     } catch (err) {
-      console.error('Erreur lors de la suppression de l\'utilisateur:', err);
+      showError('Erreur', err instanceof Error ? err.message : 'Une erreur est survenue');
     }
   };
 
-  const handleSubmitUser = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleSubmitUser = async (formData: UserFormData) => {
+    setIsSubmitting(true);
     try {
       const token = localStorage.getItem('token');
       const url = editingUser 
@@ -178,14 +171,18 @@ const UsersManagement: React.FC = () => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error?.message || 'Erreur lors de la sauvegarde');
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error?.message || 'Erreur lors de la sauvegarde de l\'utilisateur';
+        throw new Error(errorMessage);
       }
 
       setShowCreateEditModal(false);
+      setEditingUser(null);
       fetchUsers();
     } catch (err) {
-      console.error('Erreur lors de la soumission:', err);
+      throw err; // Re-throw to let the form handle the error
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -205,12 +202,13 @@ const UsersManagement: React.FC = () => {
         throw new Error('Erreur lors de la mise à jour du statut');
       }
 
-      // Mettre à jour la liste des utilisateurs
-      setUsers(users.map(user => 
-        user.id === userId ? { ...user, isActive } : user
-      ));
+      showSuccess(
+        'Statut mis à jour', 
+        `L'utilisateur a été ${isActive ? 'activé' : 'désactivé'} avec succès`
+      );
+      fetchUsers();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Une erreur est survenue');
+      showError('Erreur', err instanceof Error ? err.message : 'Une erreur est survenue');
     }
   };
 
@@ -224,41 +222,50 @@ const UsersManagement: React.FC = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Erreur lors du chargement des détails');
+        throw new Error('Erreur lors de la récupération des détails');
       }
 
       const data = await response.json();
       setSelectedUser(data.data);
       setShowUserModal(true);
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Une erreur est survenue');
+      showError('Erreur', err instanceof Error ? err.message : 'Une erreur est survenue');
     }
   };
 
   const getRoleIcon = (role: string) => {
     switch (role) {
-      case 'ADMIN':
-        return <Shield className="h-4 w-4" />;
-      case 'DRIVER':
-        return <Car className="h-4 w-4" />;
-      default:
-        return <User className="h-4 w-4" />;
+      case 'ADMIN': return <Shield className="h-4 w-4" />;
+      case 'DRIVER': return <Car className="h-4 w-4" />;
+      default: return <User className="h-4 w-4" />;
     }
   };
 
   const getRoleBadge = (role: string) => {
-    const styles = {
-      ADMIN: 'bg-purple-100 text-purple-800',
-      DRIVER: 'bg-blue-100 text-blue-800',
-      CLIENT: 'bg-green-100 text-green-800'
-    };
-    
-    return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${styles[role as keyof typeof styles]}`}>
-        {getRoleIcon(role)}
-        <span className="ml-1">{role}</span>
-      </span>
-    );
+    const baseClasses = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium";
+    switch (role) {
+      case 'ADMIN':
+        return (
+          <span className={`${baseClasses} bg-purple-100 text-purple-800`}>
+            <Shield className="h-3 w-3 mr-1" />
+            Administrateur
+          </span>
+        );
+      case 'DRIVER':
+        return (
+          <span className={`${baseClasses} bg-blue-100 text-blue-800`}>
+            <Car className="h-3 w-3 mr-1" />
+            Chauffeur
+          </span>
+        );
+      default:
+        return (
+          <span className={`${baseClasses} bg-gray-100 text-gray-800`}>
+            <User className="h-3 w-3 mr-1" />
+            Client
+          </span>
+        );
+    }
   };
 
   if (loading && users.length === 0) {
@@ -487,196 +494,86 @@ const UsersManagement: React.FC = () => {
       </div>
 
       {/* User Details Modal */}
-      {showUserModal && selectedUser && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={() => setShowUserModal(false)}></div>
-            
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                <div className="sm:flex sm:items-start">
-                  <div className="w-full">
-                    <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
-                      Détails de l'utilisateur
-                    </h3>
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Nom complet</label>
-                        <p className="text-sm text-gray-900">{selectedUser.firstName} {selectedUser.lastName}</p>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Email</label>
-                        <p className="text-sm text-gray-900">{selectedUser.email}</p>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Téléphone</label>
-                        <p className="text-sm text-gray-900">{selectedUser.phone}</p>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Rôle</label>
-                        <div className="mt-1">{getRoleBadge(selectedUser.role)}</div>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Statut</label>
-                        <p className={`text-sm font-medium ${
-                          selectedUser.isActive ? 'text-green-600' : 'text-red-600'
-                        }`}>
-                          {selectedUser.isActive ? 'Actif' : 'Inactif'}
-                        </p>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Date d'inscription</label>
-                        <p className="text-sm text-gray-900">
-                          {new Date(selectedUser.createdAt).toLocaleDateString('fr-FR', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                <button
-                  type="button"
-                  onClick={() => setShowUserModal(false)}
-                  className="w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
-                >
-                  Fermer
-                </button>
-              </div>
+      <Modal
+        isOpen={showUserModal}
+        onClose={() => {
+          setShowUserModal(false);
+          setSelectedUser(null);
+        }}
+        title="Détails de l'utilisateur"
+        size="md"
+      >
+        {selectedUser && (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Nom complet</label>
+              <p className="text-sm text-gray-900">{selectedUser.firstName} {selectedUser.lastName}</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Email</label>
+              <p className="text-sm text-gray-900">{selectedUser.email}</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Téléphone</label>
+              <p className="text-sm text-gray-900">{selectedUser.phone}</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Rôle</label>
+              <div className="mt-1">{getRoleBadge(selectedUser.role)}</div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Statut</label>
+              <p className={`text-sm font-medium ${
+                selectedUser.isActive ? 'text-green-600' : 'text-red-600'
+              }`}>
+                {selectedUser.isActive ? 'Actif' : 'Inactif'}
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Date d'inscription</label>
+              <p className="text-sm text-gray-900">
+                {new Date(selectedUser.createdAt).toLocaleDateString('fr-FR', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </p>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
 
-      {/* Modale Créer/Éditer Utilisateur */}
-      {showCreateEditModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-gray-900">
-                  {editingUser ? 'Modifier l\'utilisateur' : 'Créer un nouvel utilisateur'}
-                </h3>
-                <button
-                  onClick={() => setShowCreateEditModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-              
-              <form onSubmit={handleSubmitUser} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Prénom *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.firstName}
-                      onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Nom *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.lastName}
-                      onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email *
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Téléphone *
-                  </label>
-                  <input
-                    type="tel"
-                    required
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                
-                {!editingUser && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Mot de passe *
-                    </label>
-                    <input
-                      type="password"
-                      required
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      minLength={6}
-                    />
-                  </div>
-                )}
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Rôle *
-                  </label>
-                  <select
-                    value={formData.role}
-                    onChange={(e) => setFormData({ ...formData, role: e.target.value as 'CLIENT' | 'DRIVER' | 'ADMIN' })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="CLIENT">Client</option>
-                    <option value="DRIVER">Chauffeur</option>
-                    <option value="ADMIN">Administrateur</option>
-                  </select>
-                </div>
-                
-                <div className="flex justify-end space-x-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setShowCreateEditModal(false)}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                  >
-                    Annuler
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                  >
-                    {editingUser ? 'Modifier' : 'Créer'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Create/Edit User Modal */}
+      <Modal
+        isOpen={showCreateEditModal}
+        onClose={() => {
+          setShowCreateEditModal(false);
+          setEditingUser(null);
+        }}
+        title={editingUser ? 'Modifier l\'utilisateur' : 'Créer un nouvel utilisateur'}
+        size="md"
+      >
+        <UserForm
+          user={editingUser}
+          onSubmit={handleSubmitUser}
+          onCancel={() => {
+            setShowCreateEditModal(false);
+            setEditingUser(null);
+          }}
+          isLoading={isSubmitting}
+        />
+      </Modal>
     </div>
+  );
+};
+
+const UsersManagement: React.FC = () => {
+  return (
+    <NotificationProvider>
+      <UsersManagementContent />
+    </NotificationProvider>
   );
 };
 

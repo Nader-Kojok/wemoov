@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Car, User } from 'lucide-react';
+import { useDebounce } from '../../hooks/useDebounce';
 
 // Import new modular components
 import Modal from './shared/Modal';
@@ -9,6 +10,7 @@ import VehiclesTable from './tables/VehiclesTable';
 import DriverForm from './forms/DriverForm';
 import VehicleForm from './forms/VehicleForm';
 import VehicleAssignmentModal from './modals/VehicleAssignmentModal';
+import { NotificationProvider, useNotifications } from './shared/NotificationSystem';
 
 // Import types
 import type { 
@@ -19,7 +21,7 @@ import type {
   VehicleFormData 
 } from '../../types/dashboard';
 
-const DriversVehiclesManagement: React.FC = () => {
+const DriversVehiclesManagementContent: React.FC = () => {
   // Main state
   const [activeTab, setActiveTab] = useState<'drivers' | 'vehicles'>('drivers');
   const [drivers, setDrivers] = useState<Driver[]>([]);
@@ -32,6 +34,9 @@ const DriversVehiclesManagement: React.FC = () => {
   const [availabilityFilter, setAvailabilityFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [currentPage] = useState(1);
+  
+  // Debounce search term to avoid excessive API calls
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
   
   // Modal state
   const [showDriverModal, setShowDriverModal] = useState(false);
@@ -52,7 +57,7 @@ const DriversVehiclesManagement: React.FC = () => {
       fetchVehicles();
     }
     fetchUsers();
-  }, [activeTab, currentPage, searchTerm, availabilityFilter, typeFilter]);
+  }, [activeTab, currentPage, debouncedSearchTerm, availabilityFilter, typeFilter]);
 
   const fetchUsers = async () => {
     try {
@@ -79,7 +84,7 @@ const DriversVehiclesManagement: React.FC = () => {
       const params = new URLSearchParams({
         page: currentPage.toString(),
         limit: '10',
-        ...(searchTerm && { search: searchTerm }),
+        ...(debouncedSearchTerm && { search: debouncedSearchTerm }),
         ...(availabilityFilter && { available: availabilityFilter })
       });
 
@@ -107,7 +112,7 @@ const DriversVehiclesManagement: React.FC = () => {
       const params = new URLSearchParams({
         page: currentPage.toString(),
         limit: '10',
-        ...(searchTerm && { search: searchTerm }),
+        ...(debouncedSearchTerm && { search: debouncedSearchTerm }),
         ...(availabilityFilter && { available: availabilityFilter }),
         ...(typeFilter && { type: typeFilter })
       });
@@ -198,14 +203,16 @@ const DriversVehiclesManagement: React.FC = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Erreur lors de la sauvegarde du chauffeur');
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error?.message || 'Erreur lors de la sauvegarde du chauffeur';
+        throw new Error(errorMessage);
       }
 
       setShowDriverModal(false);
       setEditingDriver(null);
       fetchDrivers();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Une erreur est survenue');
+      throw err; // Re-throw to let the form handle the error
     } finally {
       setIsSubmitting(false);
     }
@@ -262,14 +269,16 @@ const DriversVehiclesManagement: React.FC = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Erreur lors de la sauvegarde du véhicule');
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error?.message || 'Erreur lors de la sauvegarde du véhicule';
+        throw new Error(errorMessage);
       }
 
       setShowVehicleModal(false);
       setEditingVehicle(null);
       fetchVehicles();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Une erreur est survenue');
+      throw err; // Re-throw to let the form handle the error
     } finally {
       setIsSubmitting(false);
     }
@@ -456,6 +465,14 @@ const DriversVehiclesManagement: React.FC = () => {
         isLoading={isSubmitting}
       />
     </div>
+  );
+};
+
+const DriversVehiclesManagement: React.FC = () => {
+  return (
+    <NotificationProvider>
+      <DriversVehiclesManagementContent />
+    </NotificationProvider>
   );
 };
 

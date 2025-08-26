@@ -34,29 +34,33 @@ const Modal: React.FC<ModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
+    <div className="fixed inset-0 z-50 overflow-y-auto animate-in fade-in duration-200">
       <div 
-        className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0"
+        className="flex items-center justify-center min-h-screen p-4"
         onClick={handleBackdropClick}
       >
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+        {/* Arrière-plan avec effet de flou et dégradé */}
+        <div className="fixed inset-0 bg-gradient-to-br from-blue-900/20 via-purple-900/20 to-gray-900/40 backdrop-blur-sm transition-all duration-300" />
         
-        <div className={`inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:w-full ${sizeClasses[size]}`}>
-          <div className="bg-white px-4 pt-5 pb-4 sm:p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">
+        {/* Contenu de la modale avec animations et design amélioré */}
+        <div className={`bg-white/95 backdrop-blur-md rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all duration-300 w-full relative z-10 border border-white/20 animate-in zoom-in-95 slide-in-from-bottom-4 ${sizeClasses[size]}`}>
+          <div className="bg-gradient-to-r from-blue-50/50 to-purple-50/50 px-6 pt-6 pb-4 border-b border-gray-100/50">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-xl font-semibold text-gray-800 tracking-tight">
                 {title}
               </h3>
               {showCloseButton && (
                 <button
                   onClick={onClose}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                  className="text-gray-400 hover:text-gray-600 hover:bg-gray-100/50 rounded-full p-2 transition-all duration-200 hover:scale-105"
                   type="button"
                 >
                   <X className="h-5 w-5" />
                 </button>
               )}
             </div>
+          </div>
+          <div className="px-6 py-6 bg-white/80">
             {children}
           </div>
         </div>

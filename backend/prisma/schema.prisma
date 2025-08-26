@@ -28,6 +28,11 @@ model User {
   driver   Driver?
   payments Payment[]
 
+  // Index pour optimiser les requêtes fréquentes
+  @@index([role])
+  @@index([isActive])
+  @@index([createdAt])
+  @@index([role, isActive])
   @@map("users")
 }
 
@@ -48,6 +53,10 @@ model Driver {
   vehicle  Vehicle?  @relation(fields: [vehicleId], references: [id])
   bookings Booking[]
 
+  // Index pour optimiser les requêtes fréquentes
+  @@index([isAvailable])
+  @@index([rating])
+  @@index([vehicleId])
   @@map("drivers")
 }
 
@@ -70,6 +79,10 @@ model Vehicle {
   drivers  Driver[]
   bookings Booking[]
 
+  // Index pour optimiser les requêtes fréquentes
+  @@index([type])
+  @@index([isAvailable])
+  @@index([type, isAvailable])
   @@map("vehicles")
 }
 
@@ -103,6 +116,15 @@ model Booking {
   vehicle  Vehicle?  @relation(fields: [vehicleId], references: [id])
   payments Payment[]
 
+  // Index pour optimiser les requêtes fréquentes
+  @@index([status])
+  @@index([serviceType])
+  @@index([userId])
+  @@index([driverId])
+  @@index([createdAt])
+  @@index([scheduledDate])
+  @@index([status, serviceType])
+  @@index([status, createdAt])
   @@map("bookings")
 }
 
@@ -124,6 +146,13 @@ model Payment {
   booking Booking @relation(fields: [bookingId], references: [id])
   user    User    @relation(fields: [userId], references: [id])
 
+  // Index pour optimiser les requêtes fréquentes
+  @@index([status])
+  @@index([userId])
+  @@index([bookingId])
+  @@index([createdAt])
+  @@index([status, createdAt])
+  @@index([method])
   @@map("payments")
 }
 

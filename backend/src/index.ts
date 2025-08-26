@@ -7,6 +7,7 @@ import dotenv from 'dotenv';
 // Import des routes
 import authRoutes from './routes/auth';
 import bookingRoutes from './routes/bookings';
+import publicBookingRoutes from './routes/publicBookings';
 import userRoutes from './routes/users';
 import serviceRoutes from './routes/services';
 import vehicleRoutes from './routes/vehicles';
@@ -56,6 +57,7 @@ app.get('/health', (req, res) => {
 // Routes API
 app.use('/api/auth', authRoutes);
 app.use('/api/bookings', bookingRoutes);
+app.use('/api/public/bookings', publicBookingRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/vehicles', vehicleRoutes);

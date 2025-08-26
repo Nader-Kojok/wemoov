@@ -133,11 +133,86 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, onOpenChange }
     }
   }
 
-  const handleSubmit = () => {
-    console.log("Données de réservation:", bookingData)
-    // Ici vous pourriez envoyer les données à votre API
-    onOpenChange(false)
-    setCurrentStep(1)
+  const handleSubmit = async () => {
+    try {
+      // Validation des données requises
+      const requiredFields = {
+        serviceType: bookingData.serviceType,
+        pickupLocation: bookingData.pickupLocation,
+        destination: bookingData.destination,
+        date: bookingData.date,
+        time: bookingData.time,
+        passengers: bookingData.passengers,
+        firstName: bookingData.firstName,
+        lastName: bookingData.lastName,
+        phone: bookingData.phone
+      }
+
+      // Vérifier que tous les champs requis sont remplis
+      const missingFields = Object.entries(requiredFields)
+        .filter(([key, value]) => !value || value.toString().trim() === '')
+        .map(([key]) => key)
+
+      if (missingFields.length > 0) {
+        alert(`Veuillez remplir tous les champs requis: ${missingFields.join(', ')}`)
+        return
+      }
+
+      // Préparer les données pour l'API
+      const bookingPayload = {
+        serviceType: bookingData.serviceType,
+        pickupLocation: bookingData.pickupLocation,
+        destination: bookingData.destination,
+        scheduledDate: bookingData.date,
+        scheduledTime: bookingData.time,
+        passengers: parseInt(bookingData.passengers),
+        vehicleType: bookingData.vehicleType || 'SEDAN',
+        specialRequests: bookingData.specialRequests,
+        firstName: bookingData.firstName,
+        lastName: bookingData.lastName,
+        phone: bookingData.phone,
+        email: bookingData.email
+      }
+
+      console.log("Envoi de la réservation:", bookingPayload)
+
+      // Envoyer la réservation à l'API publique
+      const response = await fetch('/api/public/bookings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(bookingPayload)
+      })
+
+      const result = await response.json()
+
+      if (response.ok && result.success) {
+        alert('Réservation créée avec succès! Vous serez contacté prochainement.')
+        // Réinitialiser le formulaire
+        setBookingData({
+          serviceType: '',
+          pickupLocation: '',
+          destination: '',
+          date: '',
+          time: '',
+          passengers: '1',
+          vehicleType: '',
+          firstName: '',
+          lastName: '',
+          phone: '',
+          email: '',
+          specialRequests: ''
+        })
+        onOpenChange(false)
+        setCurrentStep(1)
+      } else {
+        throw new Error(result.error?.message || 'Erreur lors de la création de la réservation')
+      }
+    } catch (error) {
+      console.error('Erreur lors de la soumission:', error)
+      alert(`Erreur: ${error instanceof Error ? error.message : 'Une erreur est survenue'}`)
+    }
   }
 
   const renderStepContent = () => {

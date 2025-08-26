@@ -1,83 +1,19 @@
 import { Request, Response } from 'express';
 import { prisma } from '../utils/database';
 import { ApiResponse } from '../types';
+import { cache, CACHE_KEYS, CACHE_TTL } from '../utils/cache';
 
 // Statistiques générales du dashboard
 export const getDashboardStats = async (req: Request, res: Response) => {
   try {
-    // Statistiques des utilisateurs
-    const totalUsers = await prisma.user.count();
-    const totalClients = await prisma.user.count({ where: { role: 'CLIENT' } });
-    const totalDrivers = await prisma.user.count({ where: { role: 'DRIVER' } });
-    const activeUsers = await prisma.user.count({ where: { isActive: true } });
-
-    // Statistiques des réservations
-    const totalBookings = await prisma.booking.count();
-    const pendingBookings = await prisma.booking.count({ where: { status: 'PENDING' } });
-    const completedBookings = await prisma.booking.count({ where: { status: 'COMPLETED' } });
-    const cancelledBookings = await prisma.booking.count({ where: { status: 'CANCELLED' } });
-
-    // Statistiques des paiements
-    const totalRevenue = await prisma.payment.aggregate({
-      where: { status: 'COMPLETED' },
-      _sum: { amount: true }
-    });
-    const pendingPayments = await prisma.payment.count({ where: { status: 'PENDING' } });
-
-    // Statistiques des véhicules
-    const totalVehicles = await prisma.vehicle.count();
-    const availableVehicles = await prisma.vehicle.count({ where: { isAvailable: true } });
-
-    // Réservations récentes (7 derniers jours)
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const recentBookings = await prisma.booking.count({
-      where: {
-        createdAt: {
-          gte: sevenDaysAgo
-        }
-      }
-    });
-
-    // Revenus du mois en cours
-    const startOfMonth = new Date();
-    startOfMonth.setDate(1);
-    startOfMonth.setHours(0, 0, 0, 0);
-    
-    const monthlyRevenue = await prisma.payment.aggregate({
-      where: {
-        status: 'COMPLETED',
-        createdAt: {
-          gte: startOfMonth
-        }
+    // Utiliser le cache pour éviter les requêtes répétées
+    const stats = await cache.getOrSet(
+      CACHE_KEYS.DASHBOARD_STATS,
+      async () => {
+        return await calculateDashboardStats();
       },
-      _sum: { amount: true }
-    });
-
-    const stats = {
-      users: {
-        total: totalUsers,
-        clients: totalClients,
-        drivers: totalDrivers,
-        active: activeUsers
-      },
-      bookings: {
-        total: totalBookings,
-        pending: pendingBookings,
-        completed: completedBookings,
-        cancelled: cancelledBookings,
-        recent: recentBookings
-      },
-      payments: {
-        totalRevenue: totalRevenue._sum.amount || 0,
-        monthlyRevenue: monthlyRevenue._sum.amount || 0,
-        pending: pendingPayments
-      },
-      vehicles: {
-        total: totalVehicles,
-        available: availableVehicles
-      }
-    };
+      CACHE_TTL.MEDIUM // Cache pendant 5 minutes
+    );
 
     const response: ApiResponse = {
       success: true,
@@ -96,6 +32,158 @@ export const getDashboardStats = async (req: Request, res: Response) => {
     };
     res.status(500).json(response);
   }
+};
+
+// Fonction séparée pour calculer les statistiques (pour faciliter la mise en cache)
+const calculateDashboardStats = async () => {
+    // Dates pour les calculs
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    // Requête optimisée avec Promise.all pour exécuter toutes les requêtes en parallèle
+    const [
+      // Statistiques des utilisateurs groupées
+      userStats,
+      // Statistiques des réservations groupées
+      bookingStats,
+      recentBookingsCount,
+      // Statistiques des paiements groupées
+      paymentStats,
+      monthlyRevenueStats,
+      // Statistiques des véhicules groupées
+      vehicleStats
+    ] = await Promise.all([
+      // Une seule requête pour toutes les statistiques utilisateurs
+      prisma.user.groupBy({
+        by: ['role', 'isActive'],
+        _count: { id: true }
+      }),
+      
+      // Une seule requête pour toutes les statistiques de réservations
+      prisma.booking.groupBy({
+        by: ['status'],
+        _count: { id: true }
+      }),
+      
+      // Réservations récentes (7 derniers jours)
+      prisma.booking.count({
+        where: {
+          createdAt: {
+            gte: sevenDaysAgo
+          }
+        }
+      }),
+      
+      // Statistiques des paiements (revenus totaux et paiements en attente)
+      prisma.payment.groupBy({
+        by: ['status'],
+        _count: { id: true },
+        _sum: { amount: true }
+      }),
+      
+      // Revenus du mois en cours
+      prisma.payment.aggregate({
+        where: {
+          status: 'COMPLETED',
+          createdAt: {
+            gte: startOfMonth
+          }
+        },
+        _sum: { amount: true }
+      }),
+      
+      // Une seule requête pour toutes les statistiques de véhicules
+      prisma.vehicle.groupBy({
+        by: ['isAvailable'],
+        _count: { id: true }
+      })
+    ]);
+
+    // Traitement des résultats groupés pour les utilisateurs
+    const processedUserStats = {
+      total: 0,
+      clients: 0,
+      drivers: 0,
+      active: 0
+    };
+    
+    userStats.forEach((stat: any) => {
+      processedUserStats.total += stat._count.id;
+      if (stat.role === 'CLIENT') processedUserStats.clients += stat._count.id;
+      if (stat.role === 'DRIVER') processedUserStats.drivers += stat._count.id;
+      if (stat.isActive) processedUserStats.active += stat._count.id;
+    });
+
+    // Traitement des résultats groupés pour les réservations
+    const processedBookingStats = {
+      total: 0,
+      pending: 0,
+      completed: 0,
+      cancelled: 0,
+      recent: recentBookingsCount
+    };
+    
+    bookingStats.forEach((stat: any) => {
+      processedBookingStats.total += stat._count.id;
+      if (stat.status === 'PENDING') processedBookingStats.pending = stat._count.id;
+      if (stat.status === 'COMPLETED') processedBookingStats.completed = stat._count.id;
+      if (stat.status === 'CANCELLED') processedBookingStats.cancelled = stat._count.id;
+    });
+
+    // Traitement des résultats groupés pour les paiements
+    let totalRevenue = 0;
+    let pendingPayments = 0;
+    
+    paymentStats.forEach((stat: any) => {
+      if (stat.status === 'COMPLETED') {
+        totalRevenue = stat._sum.amount || 0;
+      }
+      if (stat.status === 'PENDING') {
+        pendingPayments = stat._count.id;
+      }
+    });
+
+    // Traitement des résultats groupés pour les véhicules
+    const processedVehicleStats = {
+      total: 0,
+      available: 0
+    };
+    
+    vehicleStats.forEach((stat: any) => {
+      processedVehicleStats.total += stat._count.id;
+      if (stat.isAvailable) processedVehicleStats.available += stat._count.id;
+    });
+
+    const stats = {
+      users: {
+        total: processedUserStats.total,
+        clients: processedUserStats.clients,
+        drivers: processedUserStats.drivers,
+        active: processedUserStats.active
+      },
+      bookings: {
+        total: processedBookingStats.total,
+        pending: processedBookingStats.pending,
+        completed: processedBookingStats.completed,
+        cancelled: processedBookingStats.cancelled,
+        recent: processedBookingStats.recent
+      },
+      payments: {
+        totalRevenue: totalRevenue,
+        monthlyRevenue: monthlyRevenueStats._sum.amount || 0,
+        pending: pendingPayments
+      },
+      vehicles: {
+        total: processedVehicleStats.total,
+        available: processedVehicleStats.available
+      }
+    };
+
+    return stats;
 };
 
 // CRUD Réservations
@@ -1346,6 +1434,48 @@ export const assignDriver = async (req: Request, res: Response) => {
   }
 };
 
+// Désassigner un chauffeur d'une réservation
+export const unassignDriver = async (req: Request, res: Response) => {
+  try {
+    const { bookingId } = req.params;
+
+    const booking = await prisma.booking.update({
+      where: { id: bookingId },
+      data: {
+        driverId: null,
+        vehicleId: null,
+        status: 'PENDING'
+      },
+      include: {
+        user: {
+          select: {
+            firstName: true,
+            lastName: true,
+            phone: true
+          }
+        }
+      }
+    });
+
+    const response: ApiResponse = {
+      success: true,
+      data: booking
+    };
+
+    res.json(response);
+  } catch (error) {
+    console.error('Erreur lors de la désassignation du chauffeur:', error);
+    const response: ApiResponse = {
+      success: false,
+      error: {
+        message: 'Erreur lors de la désassignation du chauffeur',
+        code: 'DRIVER_UNASSIGNMENT_ERROR'
+      }
+    };
+    res.status(500).json(response);
+  }
+};
+
 // Liste des chauffeurs disponibles
 export const getAvailableDrivers = async (req: Request, res: Response) => {
   try {
@@ -1399,63 +1529,20 @@ export const getAvailableDrivers = async (req: Request, res: Response) => {
 export const getRevenueStats = async (req: Request, res: Response) => {
   try {
     const period = req.query.period as string || 'month';
-    const now = new Date();
-    let startDate: Date;
-
-    switch (period) {
-      case 'week':
-        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
-        break;
-      case 'month':
-        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-        break;
-      case 'year':
-        startDate = new Date(now.getFullYear(), 0, 1);
-        break;
-      default:
-        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-    }
-
-    const revenue = await prisma.payment.aggregate({
-      where: {
-        status: 'COMPLETED',
-        createdAt: {
-          gte: startDate
-        }
-      },
-      _sum: {
-        amount: true
-      }
-    });
-
-    const previousPeriodStart = new Date(startDate);
-    previousPeriodStart.setMonth(previousPeriodStart.getMonth() - 1);
     
-    const previousRevenue = await prisma.payment.aggregate({
-      where: {
-        status: 'COMPLETED',
-        createdAt: {
-          gte: previousPeriodStart,
-          lt: startDate
-        }
+    // Utiliser le cache avec une clé spécifique à la période
+    const cacheKey = `${CACHE_KEYS.REVENUE_STATS}:${period}`;
+    const stats = await cache.getOrSet(
+      cacheKey,
+      async () => {
+        return await calculateRevenueStats(period);
       },
-      _sum: {
-        amount: true
-      }
-    });
-
-    const currentAmount = revenue._sum.amount || 0;
-    const previousAmount = previousRevenue._sum.amount || 0;
-    const growth = previousAmount > 0 ? ((currentAmount - previousAmount) / previousAmount) * 100 : 0;
+      CACHE_TTL.MEDIUM // Cache pendant 5 minutes
+    );
 
     const response: ApiResponse = {
       success: true,
-      data: {
-        current: currentAmount,
-        previous: previousAmount,
-        growth: Math.round(growth * 100) / 100,
-        period
-      }
+      data: stats
     };
 
     res.json(response);
@@ -1470,6 +1557,67 @@ export const getRevenueStats = async (req: Request, res: Response) => {
     };
     res.status(500).json(response);
   }
+};
+
+// Fonction séparée pour calculer les statistiques de revenus (optimisée)
+const calculateRevenueStats = async (period: string) => {
+  const now = new Date();
+  let startDate: Date;
+
+  switch (period) {
+    case 'week':
+      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
+      break;
+    case 'month':
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      break;
+    case 'year':
+      startDate = new Date(now.getFullYear(), 0, 1);
+      break;
+    default:
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+  }
+
+  const previousPeriodStart = new Date(startDate);
+  previousPeriodStart.setMonth(previousPeriodStart.getMonth() - 1);
+
+  // Exécuter les deux requêtes en parallèle pour optimiser les performances
+  const [revenue, previousRevenue] = await Promise.all([
+    prisma.payment.aggregate({
+      where: {
+        status: 'COMPLETED',
+        createdAt: {
+          gte: startDate
+        }
+      },
+      _sum: {
+        amount: true
+      }
+    }),
+    prisma.payment.aggregate({
+      where: {
+        status: 'COMPLETED',
+        createdAt: {
+          gte: previousPeriodStart,
+          lt: startDate
+        }
+      },
+      _sum: {
+        amount: true
+      }
+    })
+  ]);
+
+  const currentAmount = revenue._sum.amount || 0;
+  const previousAmount = previousRevenue._sum.amount || 0;
+  const growth = previousAmount > 0 ? ((currentAmount - previousAmount) / previousAmount) * 100 : 0;
+
+  return {
+    current: currentAmount,
+    previous: previousAmount,
+    growth: Math.round(growth * 100) / 100,
+    period
+  };
 };
 
 // CRUD Utilisateurs
