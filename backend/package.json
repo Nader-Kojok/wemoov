@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "Backend API pour WeMoov - Service de transport au Sénégal",
   "main": "dist/index.js",
-  "type": "commonjs",
   "scripts": {
     "dev": "nodemon src/index.ts",
     "build": "tsc",
