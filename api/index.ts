@@ -1,8 +1,11 @@
-import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
+// Import the compiled CommonJS backend using dynamic import
+const getApp = async () => {
+  const backend = await import('../backend/dist/index.js');
+  return backend.default || backend;
+};
 
-// Import the compiled CommonJS backend
-const app = require('../backend/dist/index.js').default || require('../backend/dist/index.js');
-
-// Export the Express app directly - Vercel handles the conversion
-export default app;
+// Export the Express app for Vercel
+export default async function handler(req: any, res: any) {
+  const app = await getApp();
+  return app(req, res);
+}
