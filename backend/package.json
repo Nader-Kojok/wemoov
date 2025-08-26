@@ -1,10 +1,11 @@
 {
   "name": "wemoov-backend",
   "version": "1.0.0",
+  "type": "module",
   "description": "Backend API pour WeMoov - Service de transport au Sénégal",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "nodemon src/index.ts",
+    "dev": "NODE_OPTIONS='--loader ts-node/esm' nodemon src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
     "db:generate": "prisma generate",

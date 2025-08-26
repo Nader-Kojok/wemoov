@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { prisma } from '../utils/database';
-import { ApiResponse } from '../types/index';
+import { prisma } from '../utils/database.js';
+import { ApiResponse } from '../types/index.js';
 
 // Interface pour les réservations publiques (anonymes)
 interface PublicBookingRequest {

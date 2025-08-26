@@ -1,4 +1,4 @@
-import { CreateUserRequest, CreateBookingRequest, LoginRequest } from '../types/index';
+import { CreateUserRequest, CreateBookingRequest, LoginRequest } from '../types/index.js';
 
 // Validation des emails
 export const isValidEmail = (email: string): boolean => {

@@ -8,8 +8,8 @@ import {
   createVehicle,
   updateVehicle,
   deleteVehicle
-} from '../controllers/driversController';
-import { protect, authorize } from '../middleware/auth';
+} from '../controllers/driversController.js';
+import { protect, authorize } from '../middleware/auth.js';
 
 const router = Router();
 
