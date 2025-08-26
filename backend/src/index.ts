@@ -70,12 +70,14 @@ app.use('/api/admin', driversRoutes);
 app.use(notFound);
 app.use(errorHandler);
 
-// Démarrage du serveur
-app.listen(PORT, () => {
-  console.log(`🚀 WeMoov API server is running on port ${PORT}`);
-  console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🌐 CORS enabled for: ${process.env.CORS_ORIGIN || 'http://localhost:5173'}`);
-  console.log(`📊 Health check available at: http://localhost:${PORT}/health`);
-});
+// Démarrage du serveur (seulement en développement local)
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`🚀 WeMoov API server is running on port ${PORT}`);
+    console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🌐 CORS enabled for: ${process.env.CORS_ORIGIN || 'http://localhost:5173'}`);
+    console.log(`📊 Health check available at: http://localhost:${PORT}/health`);
+  });
+}
 
 export default app;
