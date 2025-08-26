@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { verifyToken, extractTokenFromHeader, JWTPayload } from '../utils/auth';
-import { prisma } from '../utils/database';
+import { verifyToken, extractTokenFromHeader, JWTPayload } from '../utils/auth.js';
+import { prisma } from '../utils/database.js';
 import { User } from '@prisma/client';
 
 // Étendre l'interface Request pour inclure l'utilisateur

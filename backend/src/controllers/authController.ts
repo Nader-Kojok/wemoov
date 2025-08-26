@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
-import { prisma } from '../utils/database';
-import { hashPassword, verifyPassword, generateToken } from '../utils/auth';
-import { validateUserData, validateLoginData, normalizePhoneNumber } from '../utils/validation';
-import { CreateUserRequest, LoginRequest, ApiResponse, AuthResponse } from '../types';
+import { prisma } from '../utils/database.js';
+import { hashPassword, verifyPassword, generateToken } from '../utils/auth.js';
+import { validateUserData, validateLoginData, normalizePhoneNumber } from '../utils/validation.js';
+import { CreateUserRequest, LoginRequest, ApiResponse, AuthResponse } from '../types/index.js';
 
 // Inscription d'un nouvel utilisateur
 export const register = async (req: Request, res: Response) => {
