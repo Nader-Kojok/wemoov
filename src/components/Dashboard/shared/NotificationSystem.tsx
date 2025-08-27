@@ -9,12 +9,14 @@ interface Notification {
   title: string;
   message?: string;
   duration?: number;
+  timestamp?: number;
 }
 
 interface NotificationContextType {
   notifications: Notification[];
   addNotification: (notification: Omit<Notification, 'id'>) => void;
   removeNotification: (id: string) => void;
+  clearDuplicates: () => void;
   showSuccess: (title: string, message?: string) => void;
   showError: (title: string, message?: string) => void;
   showWarning: (title: string, message?: string) => void;
@@ -40,9 +42,25 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
   const addNotification = useCallback((notification: Omit<Notification, 'id'>) => {
     const id = Math.random().toString(36).substr(2, 9);
-    const newNotification = { ...notification, id };
+    const timestamp = Date.now();
+    const newNotification = { ...notification, id, timestamp };
     
-    setNotifications(prev => [...prev, newNotification]);
+    setNotifications(prev => {
+      const now = Date.now();
+      // Check for duplicate notifications (same type and title) within last 2 seconds
+      const isDuplicate = prev.some(existing => 
+        existing.type === newNotification.type && 
+        existing.title === newNotification.title &&
+        existing.message === newNotification.message &&
+        (now - (existing.timestamp || 0)) < 2000 // Within 2 seconds
+      );
+      
+      if (isDuplicate) {
+        return prev; // Don't add duplicate
+      }
+      
+      return [...prev, newNotification];
+    });
 
     // Auto remove after duration (default 5 seconds)
     const duration = notification.duration || 5000;
@@ -53,6 +71,20 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
   const removeNotification = useCallback((id: string) => {
     setNotifications(prev => prev.filter(notification => notification.id !== id));
+  }, []);
+
+  const clearDuplicates = useCallback(() => {
+    setNotifications(prev => {
+      const seen = new Set();
+      return prev.filter(notification => {
+        const key = `${notification.type}-${notification.title}-${notification.message || ''}`;
+        if (seen.has(key)) {
+          return false;
+        }
+        seen.add(key);
+        return true;
+      });
+    });
   }, []);
 
   const showSuccess = useCallback((title: string, message?: string) => {
@@ -75,6 +107,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     notifications,
     addNotification,
     removeNotification,
+    clearDuplicates,
     showSuccess,
     showError,
     showWarning,

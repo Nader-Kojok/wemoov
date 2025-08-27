@@ -319,8 +319,14 @@ const DatabaseManagement: React.FC = () => {
           </button>
 
           <button
-            onClick={() => setShowRestoreConfirm(true)}
-            disabled={(!selectedBackup && !jsonFile) || isBackingUp || isRestoring}
+            onClick={() => {
+              if (selectedBackup) {
+                setShowRestoreConfirm(true);
+              } else {
+                setShowJsonUpload(!showJsonUpload);
+              }
+            }}
+            disabled={isBackingUp || isRestoring}
             className="flex items-center justify-center px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {isRestoring ? (
@@ -329,15 +335,6 @@ const DatabaseManagement: React.FC = () => {
               <Upload className="h-5 w-5 mr-2" />
             )}
             {isRestoring ? 'Restauration en cours...' : 'Restaurer la Base de Données'}
-          </button>
-
-          <button
-            onClick={() => setShowJsonUpload(!showJsonUpload)}
-            disabled={isBackingUp || isRestoring}
-            className="flex items-center justify-center px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <FileText className="h-5 w-5 mr-2" />
-            Télécharger JSON
           </button>
 
           <button
