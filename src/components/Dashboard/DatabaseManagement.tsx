@@ -17,6 +17,7 @@ interface BackupFile {
   size: string;
   created: string;
   path: string;
+  type?: string;
 }
 
 interface BackupResponse {
@@ -28,9 +29,20 @@ interface BackupResponse {
       filename: string;
       size: string;
       path: string;
+      type?: string;
+      records?: {
+        users: number;
+        drivers: number;
+        vehicles: number;
+        bookings: number;
+        payments: number;
+        services: number;
+      };
     };
     backups?: BackupFile[];
     count?: number;
+    downloadUrl?: string;
+    info?: string;
   };
   error?: {
     message: string;
@@ -94,9 +106,25 @@ const DatabaseManagement: React.FC = () => {
       const data: BackupResponse = await response.json();
 
       if (data.success) {
+        const backup = data.data?.backup;
+        let successMessage = `Sauvegarde créée avec succès: ${backup?.filename} (${backup?.size} MB)`;
+        
+        // If it's a JSON backup with download URL, offer download
+        if (backup?.type === 'json' && data.data?.downloadUrl) {
+          successMessage += ' - Téléchargement automatique démarré';
+          
+          // Trigger download
+          const link = document.createElement('a');
+          link.href = data.data.downloadUrl;
+          link.download = backup.filename;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }
+        
         setMessage({ 
           type: 'success', 
-          text: `Sauvegarde créée avec succès: ${data.data?.backup?.filename} (${data.data?.backup?.size} MB)` 
+          text: successMessage
         });
         // Refresh the backups list
         await fetchBackups();
@@ -283,8 +311,18 @@ const DatabaseManagement: React.FC = () => {
           ) : backups.length === 0 ? (
             <div className="text-center py-8">
               <Database className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600">Aucune sauvegarde disponible</p>
-              <p className="text-sm text-gray-500 mt-1">Créez votre première sauvegarde en cliquant sur le bouton ci-dessus</p>
+              <p className="text-gray-600">
+                {message?.text?.includes('serverless') 
+                  ? 'Mode Serverless Détecté' 
+                  : 'Aucune sauvegarde disponible'
+                }
+              </p>
+              <p className="text-sm text-gray-500 mt-1">
+                {message?.text?.includes('serverless')
+                  ? 'En mode serverless, les sauvegardes sont téléchargées directement au format JSON'
+                  : 'Créez votre première sauvegarde en cliquant sur le bouton ci-dessus'
+                }
+              </p>
             </div>
           ) : (
             <div className="space-y-3">

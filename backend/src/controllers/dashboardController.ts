@@ -1847,11 +1847,128 @@ export const deleteUser = async (req: Request, res: Response) => {
 
 // Database Management Functions
 
+// Prisma-based backup for serverless environments
+const createPrismaBackup = async (req: Request, res: Response) => {
+  try {
+    console.log('🔄 Creating Prisma-based backup for serverless environment...');
+    
+    // Generate timestamp for backup file
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0] + '_' + 
+                     new Date().toISOString().replace(/[:.]/g, '-').split('T')[1].split('.')[0];
+    const backupFile = `wemoov-backup-${timestamp}.json`;
+    
+    // Export all data using Prisma
+    const [users, drivers, vehicles, bookings, payments, services] = await Promise.all([
+      prisma.user.findMany({
+        include: {
+          driver: true,
+          bookings: true,
+          payments: true
+        }
+      }),
+      prisma.driver.findMany({
+        include: {
+          user: true,
+          vehicle: true,
+          bookings: true
+        }
+      }),
+      prisma.vehicle.findMany({
+        include: {
+          drivers: true,
+          bookings: true
+        }
+      }),
+      prisma.booking.findMany({
+        include: {
+          user: true,
+          driver: true,
+          vehicle: true,
+          payments: true
+        }
+      }),
+      prisma.payment.findMany({
+        include: {
+          booking: true,
+          user: true
+        }
+      }),
+      prisma.service.findMany()
+    ]);
+    
+    const backupData = {
+      metadata: {
+        version: '1.0',
+        created: new Date().toISOString(),
+        type: 'prisma-json-backup',
+        tables: ['users', 'drivers', 'vehicles', 'bookings', 'payments', 'services']
+      },
+      data: {
+        users,
+        drivers,
+        vehicles,
+        bookings,
+        payments,
+        services
+      }
+    };
+    
+    const backupJson = JSON.stringify(backupData, null, 2);
+    const fileSizeInMB = (Buffer.byteLength(backupJson, 'utf8') / (1024 * 1024)).toFixed(2);
+    
+    console.log('✅ Prisma backup completed successfully');
+    
+    const response: ApiResponse = {
+      success: true,
+      data: {
+        message: 'Sauvegarde créée avec succès (format JSON)',
+        backup: {
+          filename: backupFile,
+          size: fileSizeInMB,
+          path: `/tmp/${backupFile}`, // Serverless temp path
+          created: new Date().toLocaleString('fr-FR'),
+          type: 'json',
+          records: {
+            users: users.length,
+            drivers: drivers.length,
+            vehicles: vehicles.length,
+            bookings: bookings.length,
+            payments: payments.length,
+            services: services.length
+          }
+        },
+        downloadUrl: `data:application/json;charset=utf-8,${encodeURIComponent(backupJson)}`
+      }
+    };
+    
+    res.json(response);
+    
+  } catch (error: any) {
+    console.error('❌ Prisma backup failed:', error.message);
+    const response: ApiResponse = {
+      success: false,
+      error: {
+        message: `Erreur lors de la sauvegarde Prisma: ${error.message}`,
+        code: 'PRISMA_BACKUP_ERROR'
+      }
+    };
+    res.status(500).json(response);
+  }
+};
+
 export const createDatabaseBackup = async (req: Request, res: Response) => {
   try {
     console.log('🔄 Starting database backup from dashboard...');
     
-    // Get the direct database URL
+    // Check if we're in a serverless environment (Vercel)
+    const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
+    
+    if (isServerless) {
+      // Use Prisma-based backup for serverless environments
+      return await createPrismaBackup(req, res);
+    }
+    
+    // Get the direct database URL for local/traditional environments
     const directDbUrl = process.env.DIRECT_DATABASE_URL;
     
     if (!directDbUrl) {
@@ -1934,7 +2051,22 @@ export const createDatabaseBackup = async (req: Request, res: Response) => {
 
 export const restoreDatabase = async (req: Request, res: Response) => {
   try {
-    const { backupFile } = req.body;
+    const { backupFile, backupData } = req.body;
+    
+    // Check if we're in a serverless environment
+    const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
+    
+    if (isServerless) {
+      // In serverless environments, restore is not supported due to limitations
+      const response: ApiResponse = {
+        success: false,
+        error: {
+          message: 'La restauration n\'est pas disponible en environnement serverless. Utilisez les sauvegardes JSON pour migrer les données manuellement.',
+          code: 'RESTORE_NOT_SUPPORTED_SERVERLESS'
+        }
+      };
+      return res.status(400).json(response);
+    }
     
     if (!backupFile) {
       const response: ApiResponse = {
@@ -1978,6 +2110,18 @@ export const restoreDatabase = async (req: Request, res: Response) => {
       return res.status(404).json(response);
     }
     
+    // Check if it's a JSON backup (Prisma format)
+    if (backupFile.endsWith('.json')) {
+      const response: ApiResponse = {
+        success: false,
+        error: {
+          message: 'La restauration des sauvegardes JSON n\'est pas encore implémentée. Utilisez pg_restore pour les fichiers .bak',
+          code: 'JSON_RESTORE_NOT_IMPLEMENTED'
+        }
+      };
+      return res.status(400).json(response);
+    }
+    
     // Add PostgreSQL to PATH for this process
     process.env.PATH = `/opt/homebrew/opt/postgresql@17/bin:${process.env.PATH}`;
     
@@ -2018,6 +2162,23 @@ export const restoreDatabase = async (req: Request, res: Response) => {
 
 export const getBackupsList = async (req: Request, res: Response) => {
   try {
+    // Check if we're in a serverless environment
+    const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
+    
+    if (isServerless) {
+      // In serverless environments, we can't store persistent files
+      // Return empty list with information about backup limitations
+      const response: ApiResponse = {
+        success: true,
+        data: {
+          backups: [],
+          message: 'Les sauvegardes en environnement serverless sont téléchargées directement',
+          info: 'En mode serverless, les sauvegardes sont générées à la demande et téléchargées immédiatement'
+        }
+      };
+      return res.json(response);
+    }
+    
     const backupsDir = path.join(__dirname, '..', '..', 'backups');
     
     if (!fs.existsSync(backupsDir)) {
@@ -2032,7 +2193,7 @@ export const getBackupsList = async (req: Request, res: Response) => {
     }
     
     const backupFiles = fs.readdirSync(backupsDir)
-      .filter(file => file.startsWith('wemoov-backup-') && file.endsWith('.bak'))
+      .filter(file => file.startsWith('wemoov-backup-') && (file.endsWith('.bak') || file.endsWith('.json')))
       .map(file => {
         const filePath = path.join(backupsDir, file);
         const stats = fs.statSync(filePath);
@@ -2040,7 +2201,8 @@ export const getBackupsList = async (req: Request, res: Response) => {
           name: file,
           size: (stats.size / (1024 * 1024)).toFixed(2), // Size in MB
           created: stats.birthtime.toLocaleString('fr-FR'),
-          path: filePath
+          path: filePath,
+          type: file.endsWith('.json') ? 'json' : 'postgresql'
         };
       })
       .sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime()); // Sort by newest first
