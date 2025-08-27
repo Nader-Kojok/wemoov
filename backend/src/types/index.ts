@@ -92,6 +92,14 @@ export interface CreatePaymentRequest {
   phoneNumber?: string;
 }
 
+export interface CompleteBookingWithPaymentRequest {
+  amount: number;
+  method: 'WAVE' | 'ORANGE_MONEY' | 'CASH' | 'CARD';
+  phoneNumber?: string;
+  transactionId?: string;
+  notes?: string;
+}
+
 // Types pour les réponses API
 export interface ApiResponse<T = any> {
   success: boolean;

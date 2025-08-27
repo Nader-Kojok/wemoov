@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../utils/database.js';
 import { validateBookingData, isValidId } from '../utils/validation.js';
-import { CreateBookingRequest, UpdateBookingRequest, ApiResponse, PaginationOptions, FilterOptions } from '../types/index.js';
+import { CreateBookingRequest, UpdateBookingRequest, CompleteBookingWithPaymentRequest, ApiResponse, PaginationOptions, FilterOptions } from '../types/index.js';
 import { 
   createSuccessResponse, 
   createErrorResponse, 
@@ -424,6 +424,159 @@ export const cancelBooking = async (req: Request, res: Response) => {
 
   } catch (error) {
     console.error('Erreur lors de l\'annulation de la réservation:', error);
+    res.status(500).json(ErrorResponses.INTERNAL_ERROR());
+  }
+};
+
+// Marquer une réservation comme terminée avec paiement
+export const completeBookingWithPayment = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json(ErrorResponses.UNAUTHORIZED());
+    }
+
+    // Seuls les admins peuvent marquer une réservation comme terminée
+    if (req.user.role !== 'ADMIN') {
+      return res.status(403).json(ErrorResponses.FORBIDDEN());
+    }
+
+    const { id } = req.params;
+    const paymentData: CompleteBookingWithPaymentRequest = req.body;
+
+    if (!id || !isValidId(id)) {
+      return res.status(400).json(
+        createErrorResponse('ID de réservation invalide', 'INVALID_ID')
+      );
+    }
+
+    // Validation des données de paiement
+    if (!paymentData.amount || paymentData.amount <= 0) {
+      return res.status(400).json(
+        createErrorResponse('Montant invalide', 'INVALID_AMOUNT')
+      );
+    }
+
+    if (!paymentData.method) {
+      return res.status(400).json(
+        createErrorResponse('Méthode de paiement requise', 'MISSING_PAYMENT_METHOD')
+      );
+    }
+
+    // Vérifier que la réservation existe
+    const existingBooking = await prisma.booking.findUnique({
+      where: { id },
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+            email: true
+          }
+        },
+        payments: true
+      }
+    });
+
+    if (!existingBooking) {
+      return res.status(404).json(ErrorResponses.NOT_FOUND('Réservation'));
+    }
+
+    // Vérifier si la réservation peut être marquée comme terminée
+    if (existingBooking.status === 'COMPLETED') {
+      return res.status(400).json(
+        createErrorResponse('Cette réservation est déjà terminée', 'BOOKING_ALREADY_COMPLETED')
+      );
+    }
+
+    if (['CANCELLED'].includes(existingBooking.status)) {
+      return res.status(400).json(
+        createErrorResponse('Impossible de terminer une réservation annulée', 'BOOKING_CANCELLED')
+      );
+    }
+
+    // Vérifier s'il y a déjà un paiement pour cette réservation
+    const existingPayment = existingBooking.payments.find(p => p.status === 'COMPLETED');
+    if (existingPayment) {
+      return res.status(400).json(
+        createErrorResponse('Un paiement a déjà été enregistré pour cette réservation', 'PAYMENT_ALREADY_EXISTS')
+      );
+    }
+
+    // Transaction pour mettre à jour la réservation et créer le paiement
+    const result = await prisma.$transaction(async (tx) => {
+      // Mettre à jour le statut de la réservation
+      const updatedBooking = await tx.booking.update({
+        where: { id },
+        data: { status: 'COMPLETED' },
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              phone: true,
+              email: true
+            }
+          },
+          driver: {
+            select: {
+              id: true,
+              user: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                  phone: true
+                }
+              }
+            }
+          }
+        }
+      });
+
+      // Créer l'enregistrement de paiement
+      const payment = await tx.payment.create({
+        data: {
+          bookingId: id,
+          userId: existingBooking.userId,
+          amount: paymentData.amount,
+          method: paymentData.method,
+          status: 'COMPLETED',
+          transactionId: paymentData.transactionId,
+          phoneNumber: paymentData.phoneNumber
+        },
+        include: {
+          booking: {
+            select: {
+              id: true,
+              serviceType: true,
+              pickupLocation: true,
+              destination: true,
+              scheduledDate: true
+            }
+          },
+          user: {
+            select: {
+              firstName: true,
+              lastName: true,
+              phone: true,
+              email: true
+            }
+          }
+        }
+      });
+
+      return { booking: updatedBooking, payment };
+    });
+
+    res.status(200).json({
+      ...createSuccessResponse(result),
+      message: 'Réservation terminée et paiement enregistré avec succès'
+    });
+
+  } catch (error) {
+    console.error('Erreur lors de la completion de la réservation:', error);
     res.status(500).json(ErrorResponses.INTERNAL_ERROR());
   }
 };
