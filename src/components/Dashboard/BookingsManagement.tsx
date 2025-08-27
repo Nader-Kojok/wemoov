@@ -170,29 +170,55 @@ const BookingsManagementContent: React.FC = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/dashboard/bookings/${selectedBooking.id}/assign`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ driverId })
-      });
+      
+      // Handle unassign case
+      if (driverId === 'UNASSIGN') {
+        const response = await fetch(`/api/dashboard/bookings/${selectedBooking.id}/unassign`, {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
 
-      if (response.ok) {
-        showSuccess(
-          'Chauffeur assigné',
-          'Le chauffeur a été assigné avec succès à cette réservation'
-        );
+        if (response.ok) {
+          showSuccess(
+            'Chauffeur désassigné',
+            'Le chauffeur a été retiré de la réservation avec succès'
+          );
+        } else {
+          const errorData = await response.json().catch(() => ({}));
+          const errorMessage = errorData.error?.message || 'Erreur lors de la désassignation du chauffeur';
+          throw new Error(errorMessage);
+        }
       } else {
-        const errorData = await response.json().catch(() => ({}));
-        const errorMessage = errorData.error?.message || 'Erreur lors de l\'assignation du chauffeur';
-        throw new Error(errorMessage);
+        // Handle assign/reassign case
+        const response = await fetch(`/api/dashboard/bookings/${selectedBooking.id}/assign`, {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ driverId })
+        });
+
+        if (response.ok) {
+          const isReassignment = selectedBooking.driver;
+          showSuccess(
+            isReassignment ? 'Chauffeur réassigné' : 'Chauffeur assigné',
+            isReassignment 
+              ? 'Le nouveau chauffeur a été assigné avec succès'
+              : 'Le chauffeur a été assigné avec succès à cette réservation'
+          );
+        } else {
+          const errorData = await response.json().catch(() => ({}));
+          const errorMessage = errorData.error?.message || 'Erreur lors de l\'assignation du chauffeur';
+          throw new Error(errorMessage);
+        }
       }
 
       setShowAssignModal(false);
       setSelectedBooking(null);
-
       fetchBookings();
     } catch (err) {
       showError(
