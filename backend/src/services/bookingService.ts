@@ -271,11 +271,14 @@ export class BookingService {
   static async assignDriver(bookingId: string, driverId: string, vehicleId?: string) {
     // Validate booking exists and is assignable
     const booking = await validateBookingExists(bookingId);
-    if (!['PENDING', 'CONFIRMED'].includes(booking.status)) {
-      throw new Error('Cette réservation ne peut pas être assignée');
+    
+    // Allow assignment/reassignment for all statuses except completed/cancelled
+    // This gives administrators full flexibility for manual driver management
+    if (['COMPLETED', 'CANCELLED'].includes(booking.status)) {
+      throw new Error('Impossible d\'assigner un chauffeur à une réservation terminée ou annulée');
     }
     
-    // Validate driver availability
+    // Validate driver exists (removed availability restrictions)
     const driver = await validateDriverAvailability(driverId);
     
     // Validate vehicle if provided
@@ -286,13 +289,15 @@ export class BookingService {
       vehicleId = driver.vehicleId || undefined;
     }
     
-    // Update booking
+    // Update booking - set status to ASSIGNED if it wasn't already IN_PROGRESS
+    const newStatus = booking.status === 'IN_PROGRESS' ? 'IN_PROGRESS' : 'ASSIGNED';
+    
     return await prisma.booking.update({
       where: { id: bookingId },
       data: {
         driverId,
         vehicleId,
-        status: 'ASSIGNED'
+        status: newStatus
       },
       include: this.BOOKING_INCLUDE_QUERY
     });
@@ -344,23 +349,14 @@ export class BookingService {
   }
 
   /**
-   * Get available drivers for a booking
+   * Get all drivers with their assignment status
    * @param bookingId - Booking ID (optional, for context)
-   * @returns Available drivers
+   * @returns All drivers with current assignment info
    */
   static async getAvailableDrivers(bookingId?: string) {
-    // Get drivers who are available and not assigned to active bookings
+    // Get all drivers with their current assignment information
+    // Administrators can assign any driver to any booking for maximum flexibility
     return await prisma.driver.findMany({
-      where: {
-        isAvailable: true,
-        bookings: {
-          none: {
-            status: {
-              in: ['CONFIRMED', 'ASSIGNED', 'IN_PROGRESS']
-            }
-          }
-        }
-      },
       include: {
         user: {
           select: {
@@ -375,6 +371,24 @@ export class BookingService {
             brand: true,
             model: true,
             licensePlate: true
+          }
+        },
+        bookings: {
+          where: {
+            status: {
+              in: ['CONFIRMED', 'ASSIGNED', 'IN_PROGRESS']
+            }
+          },
+          select: {
+            id: true,
+            status: true,
+            scheduledDate: true,
+            pickupLocation: true,
+            destination: true
+          },
+          take: 3, // Show up to 3 current assignments
+          orderBy: {
+            scheduledDate: 'asc'
           }
         }
       },

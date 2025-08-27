@@ -129,7 +129,9 @@ const BookingCard: React.FC<BookingCardProps> = ({
   };
 
   const statusConfig = getStatusConfig(booking.status);
-  const canAssign = booking.status === 'PENDING' || booking.status === 'ASSIGNED';
+  // Allow driver assignment for all active booking statuses (not completed/cancelled)
+  // This matches the backend logic for flexible manual driver management
+  const canAssign = ['PENDING', 'CONFIRMED', 'ASSIGNED', 'IN_PROGRESS'].includes(booking.status);
   const canComplete = booking.status === 'IN_PROGRESS' && onComplete;
 
   return (

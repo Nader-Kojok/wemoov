@@ -166,9 +166,10 @@ export const validatePhoneFormat = (phone: string) => {
 };
 
 /**
- * Validates that a driver is available for assignment
+ * Validates that a driver exists and can be assigned
  * @param driverId - Driver ID to check
- * @throws ValidationError if driver is not available
+ * @throws ValidationError if driver is not found
+ * @returns Driver object if valid
  */
 export const validateDriverAvailability = async (driverId: string) => {
   const driver = await prisma.driver.findUnique({
@@ -179,23 +180,38 @@ export const validateDriverAvailability = async (driverId: string) => {
     throw new ValidationError('Chauffeur non trouvé', 'DRIVER_NOT_FOUND');
   }
   
-  if (!driver.isAvailable) {
-    throw new ValidationError('Chauffeur non disponible', 'DRIVER_NOT_AVAILABLE');
-  }
+  // Note: Removed isAvailable check and active bookings check
+  // to allow manual assignment flexibility for administrators
+  // Drivers can be assigned to multiple bookings as needed
   
-  // Check for active bookings separately
-  const activeBookings = await prisma.booking.findMany({
-    where: {
-      driverId: driverId,
-      status: {
-        in: ['CONFIRMED', 'ASSIGNED', 'IN_PROGRESS']
+  return driver;
+};
+
+/**
+ * Gets driver assignment information (for informational purposes)
+ * @param driverId - Driver ID to check
+ * @returns Driver with current assignment info
+ */
+export const getDriverAssignmentInfo = async (driverId: string) => {
+  const driver = await prisma.driver.findUnique({
+    where: { id: driverId },
+    include: {
+      bookings: {
+        where: {
+          status: {
+            in: ['CONFIRMED', 'ASSIGNED', 'IN_PROGRESS']
+          }
+        },
+        select: {
+          id: true,
+          status: true,
+          scheduledDate: true,
+          pickupLocation: true,
+          destination: true
+        }
       }
     }
   });
-  
-  if (activeBookings.length > 0) {
-    throw new ValidationError('Chauffeur occupé', 'DRIVER_BUSY');
-  }
   
   return driver;
 };

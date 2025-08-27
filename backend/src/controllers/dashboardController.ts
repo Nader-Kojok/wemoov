@@ -233,10 +233,33 @@ export const assignDriver = async (req: Request, res: Response) => {
   try {
     const { bookingId } = req.params;
     const { driverId, vehicleId } = req.body;
+    
+    // Validation des paramètres
+    if (!bookingId) {
+      return res.status(400).json(createErrorResponse('ID de réservation manquant', 'MISSING_BOOKING_ID'));
+    }
+    if (!driverId) {
+      return res.status(400).json(createErrorResponse('ID de chauffeur manquant', 'MISSING_DRIVER_ID'));
+    }
+    
     const booking = await BookingService.assignDriver(bookingId, driverId, vehicleId);
     res.json(createSuccessResponse(booking));
   } catch (error) {
     console.error('Erreur lors de l\'assignation du chauffeur:', error);
+    
+    // Gestion d'erreurs plus spécifique
+    if (error.message === 'Impossible d\'assigner un chauffeur à une réservation terminée ou annulée') {
+      return res.status(400).json(createErrorResponse(
+        'Impossible d\'assigner un chauffeur à une réservation terminée ou annulée.', 
+        'BOOKING_COMPLETED_OR_CANCELLED'
+      ));
+    }
+    if (error.message === 'Chauffeur non trouvé') {
+      return res.status(404).json(createErrorResponse('Chauffeur non trouvé', 'DRIVER_NOT_FOUND'));
+    }
+    // Note: Removed status restrictions to allow flexible manual driver assignment
+    // Administrators can now assign/reassign drivers to any active booking
+    
     res.status(500).json(createErrorResponse('Erreur lors de l\'assignation du chauffeur', 'DRIVER_ASSIGNMENT_ERROR'));
   }
 };
@@ -245,10 +268,28 @@ export const assignDriver = async (req: Request, res: Response) => {
 export const unassignDriver = async (req: Request, res: Response) => {
   try {
     const { bookingId } = req.params;
+    
+    // Validation des paramètres
+    if (!bookingId) {
+      return res.status(400).json(createErrorResponse('ID de réservation manquant', 'MISSING_BOOKING_ID'));
+    }
+    
     const booking = await BookingService.unassignDriver(bookingId);
     res.json(createSuccessResponse(booking));
   } catch (error) {
     console.error('Erreur lors de la désassignation du chauffeur:', error);
+    
+    // Gestion d'erreurs plus spécifique
+    if (error.message === 'Impossible de désassigner un chauffeur d\'une réservation en cours') {
+      return res.status(400).json(createErrorResponse(
+        'Impossible de désassigner un chauffeur d\'une réservation en cours', 
+        'BOOKING_IN_PROGRESS'
+      ));
+    }
+    if (error.message.includes('Réservation non trouvée')) {
+      return res.status(404).json(createErrorResponse('Réservation non trouvée', 'BOOKING_NOT_FOUND'));
+    }
+    
     res.status(500).json(createErrorResponse('Erreur lors de la désassignation du chauffeur', 'DRIVER_UNASSIGNMENT_ERROR'));
   }
 };
