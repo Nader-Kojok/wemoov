@@ -12,7 +12,8 @@ import {
   Shield,
   Plus,
   Edit,
-  Trash2
+  Trash2,
+  Info
 } from 'lucide-react';
 import { useDebounce } from '../../hooks/useDebounce';
 import Modal from './shared/Modal';
@@ -271,52 +272,71 @@ const UsersManagementContent: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Gestion des Utilisateurs</h1>
-          <p className="text-gray-600 mt-1">Gérez les clients, chauffeurs et administrateurs</p>
+      <div className="bg-white shadow rounded-lg p-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <User className="h-8 w-8 text-blue-600" />
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Gestion des Utilisateurs</h1>
+              <p className="text-gray-600">Gérez les clients, chauffeurs et administrateurs de votre plateforme WeMoov</p>
+            </div>
+          </div>
+          <button
+            onClick={handleCreateUser}
+            className="flex items-center justify-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <Plus className="h-5 w-5 mr-2" />
+            Créer un utilisateur
+          </button>
         </div>
-        <button
-          onClick={handleCreateUser}
-          className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Créer un utilisateur
-        </button>
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Rechercher par nom, email ou téléphone..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
+      <div className="bg-white shadow rounded-lg">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h2 className="text-lg font-semibold text-gray-900">Recherche et Filtres</h2>
+          <p className="text-sm text-gray-600 mt-1">
+            Recherchez et filtrez les utilisateurs par nom, email, téléphone ou rôle
+          </p>
+        </div>
+        <div className="p-6">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Rechercher par nom, email ou téléphone..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
             </div>
-          </div>
-          <div className="sm:w-48">
-            <select
-              value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="">Tous les rôles</option>
-              <option value="CLIENT">Clients</option>
-              <option value="DRIVER">Chauffeurs</option>
-              <option value="ADMIN">Administrateurs</option>
-            </select>
+            <div className="sm:w-48">
+              <select
+                value={roleFilter}
+                onChange={(e) => setRoleFilter(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Tous les rôles</option>
+                <option value="CLIENT">Clients</option>
+                <option value="DRIVER">Chauffeurs</option>
+                <option value="ADMIN">Administrateurs</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Users Table */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-white shadow rounded-lg">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h2 className="text-lg font-semibold text-gray-900">Liste des Utilisateurs</h2>
+          <p className="text-sm text-gray-600 mt-1">
+            Consultez et gérez tous les utilisateurs de votre plateforme
+          </p>
+        </div>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -437,20 +457,20 @@ const UsersManagementContent: React.FC = () => {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
+          <div className="px-6 py-4 border-t border-gray-200">
             <div className="flex items-center justify-between">
               <div className="flex-1 flex justify-between sm:hidden">
                 <button
                   onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                   disabled={currentPage === 1}
-                  className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                  className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 transition-colors"
                 >
                   Précédent
                 </button>
                 <button
                   onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                   disabled={currentPage === totalPages}
-                  className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                  className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 transition-colors"
                 >
                   Suivant
                 </button>
@@ -463,12 +483,12 @@ const UsersManagementContent: React.FC = () => {
                   </p>
                 </div>
                 <div>
-                  <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                  <nav className="relative z-0 inline-flex rounded-lg shadow-sm -space-x-px">
                     {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                       <button
                         key={page}
                         onClick={() => setCurrentPage(page)}
-                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium transition-colors ${
                           page === currentPage
                             ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
                             : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
@@ -483,6 +503,23 @@ const UsersManagementContent: React.FC = () => {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Information Panel */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+        <div className="flex items-start space-x-3">
+          <Info className="h-6 w-6 text-blue-600 mt-0.5" />
+          <div>
+            <h3 className="font-semibold text-blue-900 mb-2">Informations sur la Gestion des Utilisateurs</h3>
+            <ul className="text-sm text-blue-800 space-y-1">
+              <li>• Les utilisateurs peuvent avoir les rôles : Client, Chauffeur ou Administrateur</li>
+              <li>• Seuls les administrateurs peuvent créer et modifier d'autres utilisateurs</li>
+              <li>• La désactivation d'un compte empêche la connexion sans supprimer les données</li>
+              <li>• Les chauffeurs doivent avoir un profil chauffeur et un véhicule assigné</li>
+              <li>• Les recherches incluent le nom, l'email et le numéro de téléphone</li>
+            </ul>
+          </div>
+        </div>
       </div>
 
       {/* User Details Modal */}

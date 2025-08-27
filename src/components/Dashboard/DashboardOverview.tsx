@@ -9,7 +9,9 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  LayoutDashboard,
+  Info
 } from 'lucide-react';
 
 interface DashboardStats {
@@ -106,17 +108,13 @@ const QuickAction: React.FC<QuickActionProps> = ({ title, description, icon: Ico
   return (
     <button
       onClick={onClick}
-      className={`w-full p-5 rounded-xl text-white transition-all duration-200 transform hover:scale-105 hover:shadow-lg ${colorClasses[color]}`}
+      className={`${colorClasses[color]} text-white p-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 text-left w-full group`}
     >
-      <div className="flex flex-col items-center text-center space-y-3">
-        <div className="p-3 bg-white bg-opacity-20 rounded-lg">
-          <Icon className="h-6 w-6" />
-        </div>
-        <div>
-          <p className="font-semibold text-sm">{title}</p>
-          <p className="text-xs opacity-90 mt-1">{description}</p>
-        </div>
+      <div className="flex items-center justify-between mb-2">
+        <Icon className="h-6 w-6 group-hover:scale-110 transition-transform duration-200" />
       </div>
+      <h4 className="font-semibold text-sm mb-1">{title}</h4>
+      <p className="text-xs opacity-90">{description}</p>
     </button>
   );
 };
@@ -182,132 +180,185 @@ const DashboardOverview: React.FC = () => {
   if (!stats) return null;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 text-white">
-        <h1 className="text-3xl font-bold mb-2">Tableau de bord</h1>
-        <p className="text-blue-100">Vue d'ensemble de votre plateforme WeMoov</p>
-        <div className="mt-4 text-sm text-blue-100">
+      <div className="bg-white shadow rounded-lg p-6">
+        <div className="flex items-center space-x-3">
+          <LayoutDashboard className="h-8 w-8 text-blue-600" />
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Tableau de Bord</h1>
+            <p className="text-gray-600">Vue d'ensemble de votre plateforme WeMoov</p>
+          </div>
+        </div>
+        <div className="mt-4 text-sm text-gray-500">
           Dernière mise à jour: {new Date().toLocaleString('fr-FR')}
         </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-        <StatCard
-          title="Total Utilisateurs"
-          value={stats.users.total}
-          change={12}
-          changeType="increase"
-          icon={Users}
-          color="blue"
-        />
-        <StatCard
-          title="Réservations Totales"
-          value={stats.bookings.total}
-          change={8}
-          changeType="increase"
-          icon={Calendar}
-          color="green"
-        />
-        <StatCard
-          title="Revenus Totaux"
-          value={formatCurrency(stats.payments.totalRevenue)}
-          change={15}
-          changeType="increase"
-          icon={DollarSign}
-          color="purple"
-        />
-        <StatCard
-          title="Véhicules Disponibles"
-          value={`${stats.vehicles.available}/${stats.vehicles.total}`}
-          icon={Car}
-          color="yellow"
-        />
+      <div className="bg-white shadow rounded-lg">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h2 className="text-lg font-semibold text-gray-900">Statistiques Générales</h2>
+          <p className="text-sm text-gray-600 mt-1">
+            Aperçu des métriques clés de votre plateforme
+          </p>
+        </div>
+        <div className="p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+            <StatCard
+              title="Total Utilisateurs"
+              value={stats.users.total}
+              change={12}
+              changeType="increase"
+              icon={Users}
+              color="blue"
+            />
+            <StatCard
+              title="Réservations Totales"
+              value={stats.bookings.total}
+              change={8}
+              changeType="increase"
+              icon={Calendar}
+              color="green"
+            />
+            <StatCard
+              title="Revenus Totaux"
+              value={formatCurrency(stats.payments.totalRevenue)}
+              change={15}
+              changeType="increase"
+              icon={DollarSign}
+              color="purple"
+            />
+            <StatCard
+              title="Véhicules Disponibles"
+              value={`${stats.vehicles.available}/${stats.vehicles.total}`}
+              icon={Car}
+              color="yellow"
+            />
+          </div>
+        </div>
       </div>
 
       {/* Detailed Stats */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
         {/* Bookings Status */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
-          <h3 className="text-lg font-semibold text-gray-900 mb-6">État des Réservations</h3>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
-              <div className="flex items-center">
-                <Clock className="h-5 w-5 text-yellow-500 mr-3" />
-                <span className="text-sm font-medium text-gray-700">En attente</span>
+        <div className="bg-white shadow rounded-lg">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900">État des Réservations</h3>
+            <p className="text-sm text-gray-600 mt-1">
+              Répartition des réservations par statut
+            </p>
+          </div>
+          <div className="p-6">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                <div className="flex items-center">
+                  <Clock className="h-5 w-5 text-yellow-500 mr-3" />
+                  <span className="text-sm font-medium text-gray-700">En attente</span>
+                </div>
+                <span className="text-lg font-bold text-gray-900">{stats.bookings.pending}</span>
               </div>
-              <span className="text-lg font-bold text-gray-900">{stats.bookings.pending}</span>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-              <div className="flex items-center">
-                <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-                <span className="text-sm font-medium text-gray-700">Terminées</span>
+              <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                <div className="flex items-center">
+                  <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
+                  <span className="text-sm font-medium text-gray-700">Terminées</span>
+                </div>
+                <span className="text-lg font-bold text-gray-900">{stats.bookings.completed}</span>
               </div>
-              <span className="text-lg font-bold text-gray-900">{stats.bookings.completed}</span>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
-              <div className="flex items-center">
-                <XCircle className="h-5 w-5 text-red-500 mr-3" />
-                <span className="text-sm font-medium text-gray-700">Annulées</span>
+              <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                <div className="flex items-center">
+                  <XCircle className="h-5 w-5 text-red-500 mr-3" />
+                  <span className="text-sm font-medium text-gray-700">Annulées</span>
+                </div>
+                <span className="text-lg font-bold text-gray-900">{stats.bookings.cancelled}</span>
               </div>
-              <span className="text-lg font-bold text-gray-900">{stats.bookings.cancelled}</span>
             </div>
           </div>
         </div>
 
         {/* Revenue Info */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
-          <h3 className="text-lg font-semibold text-gray-900 mb-6">Revenus</h3>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
-              <span className="text-sm font-medium text-gray-700">Revenus du mois</span>
-              <span className="text-lg font-bold text-purple-600">{formatCurrency(stats.payments.monthlyRevenue)}</span>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-              <span className="text-sm font-medium text-gray-700">Paiements en attente</span>
-              <span className="text-lg font-bold text-blue-600">{stats.payments.pending}</span>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-              <span className="text-sm font-medium text-gray-700">Utilisateurs actifs</span>
-              <span className="text-lg font-bold text-green-600">{stats.users.active}</span>
+        <div className="bg-white shadow rounded-lg">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900">Revenus</h3>
+            <p className="text-sm text-gray-600 mt-1">
+              Informations financières et utilisateurs actifs
+            </p>
+          </div>
+          <div className="p-6">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
+                <span className="text-sm font-medium text-gray-700">Revenus du mois</span>
+                <span className="text-lg font-bold text-purple-600">{formatCurrency(stats.payments.monthlyRevenue)}</span>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                <span className="text-sm font-medium text-gray-700">Paiements en attente</span>
+                <span className="text-lg font-bold text-blue-600">{stats.payments.pending}</span>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                <span className="text-sm font-medium text-gray-700">Utilisateurs actifs</span>
+                <span className="text-lg font-bold text-green-600">{stats.users.active}</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Quick Actions */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
-        <h3 className="text-lg font-semibold text-gray-900 mb-6">Actions Rapides</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <QuickAction
-            title="Nouvelle Réservation"
-            description="Créer une réservation"
-            icon={Calendar}
-            onClick={() => window.location.href = '/dashboard/bookings/new'}
-            color="blue"
-          />
-          <QuickAction
-            title="Gérer Utilisateurs"
-            description="Voir tous les utilisateurs"
-            icon={Users}
-            onClick={() => window.location.href = '/dashboard/users'}
-            color="green"
-          />
-          <QuickAction
-            title="Assigner Chauffeur"
-            description="Assigner un chauffeur"
-            icon={Car}
-            onClick={() => window.location.href = '/dashboard/bookings?status=pending'}
-            color="yellow"
-          />
-          <QuickAction
-            title="Voir Paiements"
-            description="Gérer les paiements"
-            icon={DollarSign}
-            onClick={() => window.location.href = '/dashboard/payments'}
-            color="red"
-          />
+      <div className="bg-white shadow rounded-lg">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900">Actions Rapides</h3>
+          <p className="text-sm text-gray-600 mt-1">
+            Accès rapide aux fonctionnalités principales
+          </p>
+        </div>
+        <div className="p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <QuickAction
+              title="Nouvelle Réservation"
+              description="Créer une réservation"
+              icon={Calendar}
+              onClick={() => window.location.href = '/dashboard/bookings/new'}
+              color="blue"
+            />
+            <QuickAction
+              title="Gérer Utilisateurs"
+              description="Voir tous les utilisateurs"
+              icon={Users}
+              onClick={() => window.location.href = '/dashboard/users'}
+              color="green"
+            />
+            <QuickAction
+              title="Assigner Chauffeur"
+              description="Assigner un chauffeur"
+              icon={Car}
+              onClick={() => window.location.href = '/dashboard/bookings?status=pending'}
+              color="yellow"
+            />
+            <QuickAction
+              title="Voir Paiements"
+              description="Gérer les paiements"
+              icon={DollarSign}
+              onClick={() => window.location.href = '/dashboard/payments'}
+              color="red"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Information Panel */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+        <div className="flex items-start space-x-3">
+          <Info className="h-6 w-6 text-blue-600 mt-0.5" />
+          <div>
+            <h3 className="font-semibold text-blue-900 mb-2">Informations sur le Tableau de Bord</h3>
+            <ul className="text-sm text-blue-800 space-y-1">
+              <li>• Les statistiques sont mises à jour en temps réel pour refléter l'état actuel de la plateforme</li>
+              <li>• Les pourcentages de croissance sont calculés par rapport au mois précédent</li>
+              <li>• Les actions rapides permettent d'accéder directement aux fonctionnalités principales</li>
+              <li>• Les métriques incluent tous les utilisateurs, réservations et transactions de la plateforme</li>
+              <li>• Les données sont actualisées automatiquement lors du chargement de la page</li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>

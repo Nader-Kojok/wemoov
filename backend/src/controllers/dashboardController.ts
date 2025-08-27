@@ -2,6 +2,12 @@ import { Request, Response } from 'express';
 import { prisma } from '../utils/database.js';
 import { ApiResponse } from '../types/index.js';
 import { cache, CACHE_KEYS, CACHE_TTL } from '../utils/cache.js';
+import { StatisticsService } from '../services/statisticsService.js';
+import { UserService } from '../services/userService.js';
+import { BookingService } from '../services/bookingService.js';
+import { DriverService } from '../services/driverService.js';
+import { VehicleService } from '../services/vehicleService.js';
+import { createSuccessResponse, createErrorResponse, createPaginatedResponse } from '../utils/responseHelpers.js';
 import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
@@ -14,416 +20,48 @@ const __dirname = path.dirname(__filename);
 // Statistiques générales du dashboard
 export const getDashboardStats = async (req: Request, res: Response) => {
   try {
-    // Utiliser le cache pour éviter les requêtes répétées
-    const stats = await cache.getOrSet(
-      CACHE_KEYS.DASHBOARD_STATS,
-      async () => {
-        return await calculateDashboardStats();
-      },
-      CACHE_TTL.MEDIUM // Cache pendant 5 minutes
-    );
-
-    const response: ApiResponse = {
-      success: true,
-      data: stats
-    };
-
-    res.json(response);
+    const stats = await StatisticsService.getDashboardStats();
+    res.json(createSuccessResponse(stats));
   } catch (error) {
     console.error('Erreur lors de la récupération des statistiques:', error);
-    const response: ApiResponse = {
-      success: false,
-      error: {
-        message: 'Erreur lors de la récupération des statistiques',
-        code: 'STATS_ERROR'
-      }
-    };
-    res.status(500).json(response);
+    res.status(500).json(createErrorResponse('Erreur lors de la récupération des statistiques', 'STATS_ERROR'));
   }
 };
 
-// Fonction séparée pour calculer les statistiques (pour faciliter la mise en cache)
-const calculateDashboardStats = async () => {
-    // Dates pour les calculs
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    
-    const startOfMonth = new Date();
-    startOfMonth.setDate(1);
-    startOfMonth.setHours(0, 0, 0, 0);
 
-    // Requête optimisée avec Promise.all pour exécuter toutes les requêtes en parallèle
-    const [
-      // Statistiques des utilisateurs groupées
-      userStats,
-      // Statistiques des réservations groupées
-      bookingStats,
-      recentBookingsCount,
-      // Statistiques des paiements groupées
-      paymentStats,
-      monthlyRevenueStats,
-      // Statistiques des véhicules groupées
-      vehicleStats
-    ] = await Promise.all([
-      // Une seule requête pour toutes les statistiques utilisateurs
-      prisma.user.groupBy({
-        by: ['role', 'isActive'],
-        _count: { id: true }
-      }),
-      
-      // Une seule requête pour toutes les statistiques de réservations
-      prisma.booking.groupBy({
-        by: ['status'],
-        _count: { id: true }
-      }),
-      
-      // Réservations récentes (7 derniers jours)
-      prisma.booking.count({
-        where: {
-          createdAt: {
-            gte: sevenDaysAgo
-          }
-        }
-      }),
-      
-      // Statistiques des paiements (revenus totaux et paiements en attente)
-      prisma.payment.groupBy({
-        by: ['status'],
-        _count: { id: true },
-        _sum: { amount: true }
-      }),
-      
-      // Revenus du mois en cours
-      prisma.payment.aggregate({
-        where: {
-          status: 'COMPLETED',
-          createdAt: {
-            gte: startOfMonth
-          }
-        },
-        _sum: { amount: true }
-      }),
-      
-      // Une seule requête pour toutes les statistiques de véhicules
-      prisma.vehicle.groupBy({
-        by: ['isAvailable'],
-        _count: { id: true }
-      })
-    ]);
-
-    // Traitement des résultats groupés pour les utilisateurs
-    const processedUserStats = {
-      total: 0,
-      clients: 0,
-      drivers: 0,
-      active: 0
-    };
-    
-    userStats.forEach((stat: any) => {
-      processedUserStats.total += stat._count.id;
-      if (stat.role === 'CLIENT') processedUserStats.clients += stat._count.id;
-      if (stat.role === 'DRIVER') processedUserStats.drivers += stat._count.id;
-      if (stat.isActive) processedUserStats.active += stat._count.id;
-    });
-
-    // Traitement des résultats groupés pour les réservations
-    const processedBookingStats = {
-      total: 0,
-      pending: 0,
-      completed: 0,
-      cancelled: 0,
-      recent: recentBookingsCount
-    };
-    
-    bookingStats.forEach((stat: any) => {
-      processedBookingStats.total += stat._count.id;
-      if (stat.status === 'PENDING') processedBookingStats.pending = stat._count.id;
-      if (stat.status === 'COMPLETED') processedBookingStats.completed = stat._count.id;
-      if (stat.status === 'CANCELLED') processedBookingStats.cancelled = stat._count.id;
-    });
-
-    // Traitement des résultats groupés pour les paiements
-    let totalRevenue = 0;
-    let pendingPayments = 0;
-    
-    paymentStats.forEach((stat: any) => {
-      if (stat.status === 'COMPLETED') {
-        totalRevenue = stat._sum.amount || 0;
-      }
-      if (stat.status === 'PENDING') {
-        pendingPayments = stat._count.id;
-      }
-    });
-
-    // Traitement des résultats groupés pour les véhicules
-    const processedVehicleStats = {
-      total: 0,
-      available: 0
-    };
-    
-    vehicleStats.forEach((stat: any) => {
-      processedVehicleStats.total += stat._count.id;
-      if (stat.isAvailable) processedVehicleStats.available += stat._count.id;
-    });
-
-    const stats = {
-      users: {
-        total: processedUserStats.total,
-        clients: processedUserStats.clients,
-        drivers: processedUserStats.drivers,
-        active: processedUserStats.active
-      },
-      bookings: {
-        total: processedBookingStats.total,
-        pending: processedBookingStats.pending,
-        completed: processedBookingStats.completed,
-        cancelled: processedBookingStats.cancelled,
-        recent: processedBookingStats.recent
-      },
-      payments: {
-        totalRevenue: totalRevenue,
-        monthlyRevenue: monthlyRevenueStats._sum.amount || 0,
-        pending: pendingPayments
-      },
-      vehicles: {
-        total: processedVehicleStats.total,
-        available: processedVehicleStats.available
-      }
-    };
-
-    return stats;
-};
 
 // CRUD Réservations
 export const createBooking = async (req: Request, res: Response) => {
   try {
-    const {
-      userId,
-      serviceType,
-      pickupLocation,
-      pickupLat,
-      pickupLng,
-      destination,
-      destinationLat,
-      destinationLng,
-      scheduledDate,
-      scheduledTime,
-      passengers,
-      totalPrice,
-      specialRequests
-    } = req.body;
-
-    // Vérifier que l'utilisateur existe
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user) {
-      const response: ApiResponse = {
-        success: false,
-        error: {
-          message: 'Utilisateur non trouvé',
-          code: 'USER_NOT_FOUND'
-        }
-      };
-      return res.status(404).json(response);
-    }
-
-    const booking = await prisma.booking.create({
-      data: {
-        userId,
-        serviceType,
-        pickupLocation,
-        pickupLat,
-        pickupLng,
-        destination,
-        destinationLat,
-        destinationLng,
-        scheduledDate: new Date(scheduledDate),
-        scheduledTime,
-        passengers,
-        totalPrice,
-        specialRequests,
-        status: 'PENDING'
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            phone: true,
-            email: true
-          }
-        }
-      }
-    });
-
-    const response: ApiResponse = {
-      success: true,
-      data: booking
-    };
-
-    res.status(201).json(response);
+    const bookingData = req.body;
+    const booking = await BookingService.createBooking(bookingData);
+    res.status(201).json(createSuccessResponse(booking));
   } catch (error) {
     console.error('Erreur lors de la création de la réservation:', error);
-    const response: ApiResponse = {
-      success: false,
-      error: {
-        message: 'Erreur lors de la création de la réservation',
-        code: 'BOOKING_CREATE_ERROR'
-      }
-    };
-    res.status(500).json(response);
+    res.status(500).json(createErrorResponse('Erreur lors de la création de la réservation', 'BOOKING_CREATE_ERROR'));
   }
 };
 
 export const updateBooking = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const {
-      serviceType,
-      pickupLocation,
-      pickupLat,
-      pickupLng,
-      destination,
-      destinationLat,
-      destinationLng,
-      scheduledDate,
-      scheduledTime,
-      passengers,
-      totalPrice,
-      status,
-      specialRequests
-    } = req.body;
-
-    // Vérifier si la réservation existe
-    const existingBooking = await prisma.booking.findUnique({ where: { id } });
-    if (!existingBooking) {
-      const response: ApiResponse = {
-        success: false,
-        error: {
-          message: 'Réservation non trouvée',
-          code: 'BOOKING_NOT_FOUND'
-        }
-      };
-      return res.status(404).json(response);
-    }
-
-    const booking = await prisma.booking.update({
-      where: { id },
-      data: {
-        serviceType,
-        pickupLocation,
-        pickupLat,
-        pickupLng,
-        destination,
-        destinationLat,
-        destinationLng,
-        scheduledDate: scheduledDate ? new Date(scheduledDate) : undefined,
-        scheduledTime,
-        passengers,
-        totalPrice,
-        status,
-        specialRequests
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            phone: true,
-            email: true
-          }
-        },
-        driver: {
-          select: {
-            id: true,
-            user: {
-              select: {
-                firstName: true,
-                lastName: true,
-                phone: true
-              }
-            }
-          }
-        },
-        vehicle: {
-          select: {
-            id: true,
-            type: true,
-            brand: true,
-            model: true,
-            licensePlate: true
-          }
-        }
-      }
-    });
-
-    const response: ApiResponse = {
-      success: true,
-      data: booking
-    };
-
-    res.json(response);
+    const bookingData = req.body;
+    const booking = await BookingService.updateBooking(id, bookingData);
+    res.json(createSuccessResponse(booking));
   } catch (error) {
     console.error('Erreur lors de la mise à jour de la réservation:', error);
-    const response: ApiResponse = {
-      success: false,
-      error: {
-        message: 'Erreur lors de la mise à jour de la réservation',
-        code: 'BOOKING_UPDATE_ERROR'
-      }
-    };
-    res.status(500).json(response);
+    res.status(500).json(createErrorResponse('Erreur lors de la mise à jour de la réservation', 'BOOKING_UPDATE_ERROR'));
   }
 };
 
 export const deleteBooking = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-
-    // Vérifier si la réservation existe
-    const existingBooking = await prisma.booking.findUnique({ where: { id } });
-    if (!existingBooking) {
-      const response: ApiResponse = {
-        success: false,
-        error: {
-          message: 'Réservation non trouvée',
-          code: 'BOOKING_NOT_FOUND'
-        }
-      };
-      return res.status(404).json(response);
-    }
-
-    // Vérifier si la réservation peut être supprimée
-    if (existingBooking.status === 'IN_PROGRESS') {
-      const response: ApiResponse = {
-        success: false,
-        error: {
-          message: 'Impossible de supprimer une réservation en cours',
-          code: 'BOOKING_IN_PROGRESS'
-        }
-      };
-      return res.status(400).json(response);
-    }
-
-    await prisma.booking.delete({ where: { id } });
-
-    const response: ApiResponse = {
-      success: true,
-      data: { deleted: true }
-    };
-
-    res.json(response);
+    await BookingService.deleteBooking(id);
+    res.json(createSuccessResponse({ deleted: true }));
   } catch (error) {
     console.error('Erreur lors de la suppression de la réservation:', error);
-    const response: ApiResponse = {
-      success: false,
-      error: {
-        message: 'Erreur lors de la suppression de la réservation',
-        code: 'BOOKING_DELETE_ERROR'
-      }
-    };
-    res.status(500).json(response);
+    res.status(500).json(createErrorResponse('Erreur lors de la suppression de la réservation', 'BOOKING_DELETE_ERROR'));
   }
 };
 
@@ -432,368 +70,49 @@ export const getDrivers = async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
-    const search = req.query.search as string;
-    const skip = (page - 1) * limit;
-
-    const where: any = {};
-    if (search) {
-      where.user = {
-        OR: [
-          { firstName: { contains: search, mode: 'insensitive' } },
-          { lastName: { contains: search, mode: 'insensitive' } },
-          { phone: { contains: search } }
-        ]
-      };
-    }
-
-    const [drivers, total] = await Promise.all([
-      prisma.driver.findMany({
-        where,
-        skip,
-        take: limit,
-        include: {
-          user: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              phone: true,
-              email: true,
-              isActive: true
-            }
-          },
-          vehicle: {
-            select: {
-              id: true,
-              type: true,
-              brand: true,
-              model: true,
-              licensePlate: true,
-              capacity: true,
-              isAvailable: true
-            }
-          },
-          _count: {
-            select: {
-              bookings: true
-            }
-          }
-        },
-        orderBy: { createdAt: 'desc' }
-      }),
-      prisma.driver.count({ where })
-    ]);
-
-    const response: ApiResponse = {
-      success: true,
-      data: drivers,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit)
-      }
+    const filters = {
+      search: req.query.search as string
     };
 
-    res.json(response);
+    const { drivers, total } = await DriverService.getDrivers(page, limit, filters);
+    res.json(createPaginatedResponse(drivers, total, page, limit));
   } catch (error) {
     console.error('Erreur lors de la récupération des chauffeurs:', error);
-    const response: ApiResponse = {
-      success: false,
-      error: {
-        message: 'Erreur lors de la récupération des chauffeurs',
-        code: 'DRIVERS_FETCH_ERROR'
-      }
-    };
-    res.status(500).json(response);
+    res.status(500).json(createErrorResponse('Erreur lors de la récupération des chauffeurs', 'DRIVERS_FETCH_ERROR'));
   }
 };
 
 export const createDriver = async (req: Request, res: Response) => {
   try {
-    const { userId, licenseNumber, vehicleId } = req.body;
-
-    // Vérifier que l'utilisateur existe et n'est pas déjà chauffeur
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      include: { driver: true }
-    });
-
-    if (!user) {
-      const response: ApiResponse = {
-        success: false,
-        error: {
-          message: 'Utilisateur non trouvé',
-          code: 'USER_NOT_FOUND'
-        }
-      };
-      return res.status(404).json(response);
-    }
-
-    if (user.driver) {
-      const response: ApiResponse = {
-        success: false,
-        error: {
-          message: 'Cet utilisateur est déjà un chauffeur',
-          code: 'USER_ALREADY_DRIVER'
-        }
-      };
-      return res.status(400).json(response);
-    }
-
-    // Vérifier l'unicité du numéro de permis
-    const existingDriver = await prisma.driver.findUnique({
-      where: { licenseNumber }
-    });
-
-    if (existingDriver) {
-      const response: ApiResponse = {
-        success: false,
-        error: {
-          message: 'Un chauffeur avec ce numéro de permis existe déjà',
-          code: 'LICENSE_ALREADY_EXISTS'
-        }
-      };
-      return res.status(400).json(response);
-    }
-
-    // Vérifier que le véhicule existe s'il est spécifié
-    if (vehicleId) {
-      const vehicle = await prisma.vehicle.findUnique({ where: { id: vehicleId } });
-      if (!vehicle) {
-        const response: ApiResponse = {
-          success: false,
-          error: {
-            message: 'Véhicule non trouvé',
-            code: 'VEHICLE_NOT_FOUND'
-          }
-        };
-        return res.status(404).json(response);
-      }
-    }
-
-    // Mettre à jour le rôle de l'utilisateur et créer le chauffeur
-    const [updatedUser, driver] = await prisma.$transaction([
-      prisma.user.update({
-        where: { id: userId },
-        data: { role: 'DRIVER' }
-      }),
-      prisma.driver.create({
-        data: {
-          userId,
-          licenseNumber,
-          vehicleId
-        },
-        include: {
-          user: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              phone: true,
-              email: true,
-              isActive: true
-            }
-          },
-          vehicle: {
-            select: {
-              id: true,
-              type: true,
-              brand: true,
-              model: true,
-              licensePlate: true
-            }
-          }
-        }
-      })
-    ]);
-
-    const response: ApiResponse = {
-      success: true,
-      data: driver
-    };
-
-    res.status(201).json(response);
+    const driverData = req.body;
+    const driver = await DriverService.createDriver(driverData);
+    res.status(201).json(createSuccessResponse(driver));
   } catch (error) {
     console.error('Erreur lors de la création du chauffeur:', error);
-    const response: ApiResponse = {
-      success: false,
-      error: {
-        message: 'Erreur lors de la création du chauffeur',
-        code: 'DRIVER_CREATE_ERROR'
-      }
-    };
-    res.status(500).json(response);
+    res.status(500).json(createErrorResponse('Erreur lors de la création du chauffeur', 'DRIVER_CREATE_ERROR'));
   }
 };
 
 export const updateDriver = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { licenseNumber, vehicleId, isAvailable } = req.body;
-
-    // Vérifier si le chauffeur existe
-    const existingDriver = await prisma.driver.findUnique({ where: { id } });
-    if (!existingDriver) {
-      const response: ApiResponse = {
-        success: false,
-        error: {
-          message: 'Chauffeur non trouvé',
-          code: 'DRIVER_NOT_FOUND'
-        }
-      };
-      return res.status(404).json(response);
-    }
-
-    // Vérifier l'unicité du numéro de permis si modifié
-    if (licenseNumber && licenseNumber !== existingDriver.licenseNumber) {
-      const duplicate = await prisma.driver.findUnique({
-        where: { licenseNumber }
-      });
-
-      if (duplicate) {
-        const response: ApiResponse = {
-          success: false,
-          error: {
-            message: 'Un autre chauffeur avec ce numéro de permis existe déjà',
-            code: 'LICENSE_DUPLICATE_ERROR'
-          }
-        };
-        return res.status(400).json(response);
-      }
-    }
-
-    // Vérifier que le véhicule existe s'il est spécifié
-    if (vehicleId) {
-      const vehicle = await prisma.vehicle.findUnique({ where: { id: vehicleId } });
-      if (!vehicle) {
-        const response: ApiResponse = {
-          success: false,
-          error: {
-            message: 'Véhicule non trouvé',
-            code: 'VEHICLE_NOT_FOUND'
-          }
-        };
-        return res.status(404).json(response);
-      }
-    }
-
-    const driver = await prisma.driver.update({
-      where: { id },
-      data: {
-        licenseNumber,
-        vehicleId,
-        isAvailable
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            phone: true,
-            email: true,
-            isActive: true
-          }
-        },
-        vehicle: {
-          select: {
-            id: true,
-            type: true,
-            brand: true,
-            model: true,
-            licensePlate: true
-          }
-        }
-      }
-    });
-
-    const response: ApiResponse = {
-      success: true,
-      data: driver
-    };
-
-    res.json(response);
+    const driverData = req.body;
+    const driver = await DriverService.updateDriver(id, driverData);
+    res.json(createSuccessResponse(driver));
   } catch (error) {
     console.error('Erreur lors de la mise à jour du chauffeur:', error);
-    const response: ApiResponse = {
-      success: false,
-      error: {
-        message: 'Erreur lors de la mise à jour du chauffeur',
-        code: 'DRIVER_UPDATE_ERROR'
-      }
-    };
-    res.status(500).json(response);
+    res.status(500).json(createErrorResponse('Erreur lors de la mise à jour du chauffeur', 'DRIVER_UPDATE_ERROR'));
   }
 };
 
 export const deleteDriver = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-
-    // Vérifier si le chauffeur existe
-    const existingDriver = await prisma.driver.findUnique({
-      where: { id },
-      include: { user: true }
-    });
-
-    if (!existingDriver) {
-      const response: ApiResponse = {
-        success: false,
-        error: {
-          message: 'Chauffeur non trouvé',
-          code: 'DRIVER_NOT_FOUND'
-        }
-      };
-      return res.status(404).json(response);
-    }
-
-    // Vérifier s'il y a des réservations actives
-    const activeBookings = await prisma.booking.count({
-      where: {
-        driverId: id,
-        status: {
-          in: ['PENDING', 'CONFIRMED', 'ASSIGNED', 'IN_PROGRESS']
-        }
-      }
-    });
-
-    if (activeBookings > 0) {
-      const response: ApiResponse = {
-        success: false,
-        error: {
-          message: 'Impossible de supprimer un chauffeur avec des réservations actives',
-          code: 'DRIVER_HAS_ACTIVE_BOOKINGS'
-        }
-      };
-      return res.status(400).json(response);
-    }
-
-    // Supprimer le chauffeur et remettre l'utilisateur en CLIENT
-    await prisma.$transaction([
-      prisma.driver.delete({ where: { id } }),
-      prisma.user.update({
-        where: { id: existingDriver.userId },
-        data: { role: 'CLIENT' }
-      })
-    ]);
-
-    const response: ApiResponse = {
-      success: true,
-      data: { deleted: true }
-    };
-
-    res.json(response);
+    await DriverService.deleteDriver(id);
+    res.json(createSuccessResponse({ deleted: true }));
   } catch (error) {
     console.error('Erreur lors de la suppression du chauffeur:', error);
-    const response: ApiResponse = {
-      success: false,
-      error: {
-        message: 'Erreur lors de la suppression du chauffeur',
-        code: 'DRIVER_DELETE_ERROR'
-      }
-    };
-    res.status(500).json(response);
+    res.status(500).json(createErrorResponse('Erreur lors de la suppression du chauffeur', 'DRIVER_DELETE_ERROR'));
   }
 };
 
@@ -802,316 +121,50 @@ export const getVehicles = async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
-    const search = req.query.search as string;
-    const type = req.query.type as string;
-    const skip = (page - 1) * limit;
-
-    const where: any = {};
-    if (search) {
-      where.OR = [
-        { brand: { contains: search, mode: 'insensitive' } },
-        { model: { contains: search, mode: 'insensitive' } },
-        { licensePlate: { contains: search, mode: 'insensitive' } }
-      ];
-    }
-    if (type) where.type = type;
-
-    const [vehicles, total] = await Promise.all([
-      prisma.vehicle.findMany({
-        where,
-        skip,
-        take: limit,
-        include: {
-          drivers: {
-            select: {
-              id: true,
-              user: {
-                select: {
-                  firstName: true,
-                  lastName: true,
-                  phone: true
-                }
-              },
-              isAvailable: true
-            }
-          },
-          _count: {
-            select: {
-              bookings: true
-            }
-          }
-        },
-        orderBy: { createdAt: 'desc' }
-      }),
-      prisma.vehicle.count({ where })
-    ]);
-
-    const response: ApiResponse = {
-      success: true,
-      data: vehicles,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit)
-      }
+    const filters = {
+      search: req.query.search as string,
+      type: req.query.type as string
     };
 
-    res.json(response);
+    const { vehicles, total } = await VehicleService.getVehicles(page, limit, filters);
+    res.json(createPaginatedResponse(vehicles, total, page, limit));
   } catch (error) {
     console.error('Erreur lors de la récupération des véhicules:', error);
-    const response: ApiResponse = {
-      success: false,
-      error: {
-        message: 'Erreur lors de la récupération des véhicules',
-        code: 'VEHICLES_FETCH_ERROR'
-      }
-    };
-    res.status(500).json(response);
+    res.status(500).json(createErrorResponse('Erreur lors de la récupération des véhicules', 'VEHICLES_FETCH_ERROR'));
   }
 };
 
 export const createVehicle = async (req: Request, res: Response) => {
   try {
-    const {
-      type,
-      brand,
-      model,
-      year,
-      licensePlate,
-      capacity,
-      priceMultiplier,
-      features
-    } = req.body;
-
-    // Vérifier l'unicité de la plaque d'immatriculation
-    const existingVehicle = await prisma.vehicle.findUnique({
-      where: { licensePlate }
-    });
-
-    if (existingVehicle) {
-      const response: ApiResponse = {
-        success: false,
-        error: {
-          message: 'Un véhicule avec cette plaque d\'immatriculation existe déjà',
-          code: 'LICENSE_PLATE_ALREADY_EXISTS'
-        }
-      };
-      return res.status(400).json(response);
-    }
-
-    const vehicle = await prisma.vehicle.create({
-      data: {
-        type,
-        brand,
-        model,
-        year,
-        licensePlate,
-        capacity,
-        priceMultiplier: priceMultiplier || 1.0,
-        features: features || []
-      },
-      include: {
-        drivers: {
-          select: {
-            id: true,
-            user: {
-              select: {
-                firstName: true,
-                lastName: true,
-                phone: true
-              }
-            }
-          }
-        }
-      }
-    });
-
-    const response: ApiResponse = {
-      success: true,
-      data: vehicle
-    };
-
-    res.status(201).json(response);
+    const vehicleData = req.body;
+    const vehicle = await VehicleService.createVehicle(vehicleData);
+    res.status(201).json(createSuccessResponse(vehicle));
   } catch (error) {
     console.error('Erreur lors de la création du véhicule:', error);
-    const response: ApiResponse = {
-      success: false,
-      error: {
-        message: 'Erreur lors de la création du véhicule',
-        code: 'VEHICLE_CREATE_ERROR'
-      }
-    };
-    res.status(500).json(response);
+    res.status(500).json(createErrorResponse('Erreur lors de la création du véhicule', 'VEHICLE_CREATE_ERROR'));
   }
 };
 
 export const updateVehicle = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const {
-      type,
-      brand,
-      model,
-      year,
-      licensePlate,
-      capacity,
-      priceMultiplier,
-      features,
-      isAvailable
-    } = req.body;
-
-    // Vérifier si le véhicule existe
-    const existingVehicle = await prisma.vehicle.findUnique({ where: { id } });
-    if (!existingVehicle) {
-      const response: ApiResponse = {
-        success: false,
-        error: {
-          message: 'Véhicule non trouvé',
-          code: 'VEHICLE_NOT_FOUND'
-        }
-      };
-      return res.status(404).json(response);
-    }
-
-    // Vérifier l'unicité de la plaque si modifiée
-    if (licensePlate && licensePlate !== existingVehicle.licensePlate) {
-      const duplicate = await prisma.vehicle.findUnique({
-        where: { licensePlate }
-      });
-
-      if (duplicate) {
-        const response: ApiResponse = {
-          success: false,
-          error: {
-            message: 'Un autre véhicule avec cette plaque d\'immatriculation existe déjà',
-            code: 'LICENSE_PLATE_DUPLICATE_ERROR'
-          }
-        };
-        return res.status(400).json(response);
-      }
-    }
-
-    const vehicle = await prisma.vehicle.update({
-      where: { id },
-      data: {
-        type,
-        brand,
-        model,
-        year,
-        licensePlate,
-        capacity,
-        priceMultiplier,
-        features,
-        isAvailable
-      },
-      include: {
-        drivers: {
-          select: {
-            id: true,
-            user: {
-              select: {
-                firstName: true,
-                lastName: true,
-                phone: true
-              }
-            }
-          }
-        }
-      }
-    });
-
-    const response: ApiResponse = {
-      success: true,
-      data: vehicle
-    };
-
-    res.json(response);
+    const vehicleData = req.body;
+    const vehicle = await VehicleService.updateVehicle(id, vehicleData);
+    res.json(createSuccessResponse(vehicle));
   } catch (error) {
     console.error('Erreur lors de la mise à jour du véhicule:', error);
-    const response: ApiResponse = {
-      success: false,
-      error: {
-        message: 'Erreur lors de la mise à jour du véhicule',
-        code: 'VEHICLE_UPDATE_ERROR'
-      }
-    };
-    res.status(500).json(response);
+    res.status(500).json(createErrorResponse('Erreur lors de la mise à jour du véhicule', 'VEHICLE_UPDATE_ERROR'));
   }
 };
 
 export const deleteVehicle = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-
-    // Vérifier si le véhicule existe
-    const existingVehicle = await prisma.vehicle.findUnique({ where: { id } });
-    if (!existingVehicle) {
-      const response: ApiResponse = {
-        success: false,
-        error: {
-          message: 'Véhicule non trouvé',
-          code: 'VEHICLE_NOT_FOUND'
-        }
-      };
-      return res.status(404).json(response);
-    }
-
-    // Vérifier s'il y a des réservations actives
-    const activeBookings = await prisma.booking.count({
-      where: {
-        vehicleId: id,
-        status: {
-          in: ['PENDING', 'CONFIRMED', 'ASSIGNED', 'IN_PROGRESS']
-        }
-      }
-    });
-
-    if (activeBookings > 0) {
-      const response: ApiResponse = {
-        success: false,
-        error: {
-          message: 'Impossible de supprimer un véhicule avec des réservations actives',
-          code: 'VEHICLE_HAS_ACTIVE_BOOKINGS'
-        }
-      };
-      return res.status(400).json(response);
-    }
-
-    // Vérifier s'il y a des chauffeurs assignés
-    const assignedDrivers = await prisma.driver.count({
-      where: { vehicleId: id }
-    });
-
-    if (assignedDrivers > 0) {
-      const response: ApiResponse = {
-        success: false,
-        error: {
-          message: 'Impossible de supprimer un véhicule avec des chauffeurs assignés',
-          code: 'VEHICLE_HAS_ASSIGNED_DRIVERS'
-        }
-      };
-      return res.status(400).json(response);
-    }
-
-    await prisma.vehicle.delete({ where: { id } });
-
-    const response: ApiResponse = {
-      success: true,
-      data: { deleted: true }
-    };
-
-    res.json(response);
+    await VehicleService.deleteVehicle(id);
+    res.json(createSuccessResponse({ deleted: true }));
   } catch (error) {
     console.error('Erreur lors de la suppression du véhicule:', error);
-    const response: ApiResponse = {
-      success: false,
-      error: {
-        message: 'Erreur lors de la suppression du véhicule',
-        code: 'VEHICLE_DELETE_ERROR'
-      }
-    };
-    res.status(500).json(response);
+    res.status(500).json(createErrorResponse('Erreur lors de la suppression du véhicule', 'VEHICLE_DELETE_ERROR'));
   }
 };
 
@@ -1120,68 +173,16 @@ export const getUsers = async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
-    const role = req.query.role as string;
-    const search = req.query.search as string;
-    const skip = (page - 1) * limit;
-
-    const where: any = {};
-    if (role) where.role = role;
-    if (search) {
-      where.OR = [
-        { firstName: { contains: search, mode: 'insensitive' } },
-        { lastName: { contains: search, mode: 'insensitive' } },
-        { email: { contains: search, mode: 'insensitive' } },
-        { phone: { contains: search } }
-      ];
-    }
-
-    const [users, total] = await Promise.all([
-      prisma.user.findMany({
-        where,
-        skip,
-        take: limit,
-        select: {
-          id: true,
-          email: true,
-          phone: true,
-          firstName: true,
-          lastName: true,
-          role: true,
-          isActive: true,
-          createdAt: true,
-          _count: {
-            select: {
-              bookings: true
-            }
-          }
-        },
-        orderBy: { createdAt: 'desc' }
-      }),
-      prisma.user.count({ where })
-    ]);
-
-    const response: ApiResponse = {
-      success: true,
-      data: users,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit)
-      }
+    const filters = {
+      role: req.query.role as string,
+      search: req.query.search as string
     };
 
-    res.json(response);
+    const { users, total } = await UserService.getUsers(page, limit, filters);
+    res.json(createPaginatedResponse(users, total, page, limit));
   } catch (error) {
     console.error('Erreur lors de la récupération des utilisateurs:', error);
-    const response: ApiResponse = {
-      success: false,
-      error: {
-        message: 'Erreur lors de la récupération des utilisateurs',
-        code: 'USERS_FETCH_ERROR'
-      }
-    };
-    res.status(500).json(response);
+    res.status(500).json(createErrorResponse('Erreur lors de la récupération des utilisateurs', 'USERS_FETCH_ERROR'));
   }
 };
 
@@ -1189,78 +190,11 @@ export const getUsers = async (req: Request, res: Response) => {
 export const getUserDetails = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-
-    const user = await prisma.user.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        email: true,
-        phone: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        isActive: true,
-        createdAt: true,
-        updatedAt: true,
-        bookings: {
-          select: {
-            id: true,
-            serviceType: true,
-            status: true,
-            totalPrice: true,
-            createdAt: true
-          },
-          orderBy: { createdAt: 'desc' },
-          take: 10
-        },
-        driver: {
-          select: {
-            id: true,
-            licenseNumber: true,
-            isAvailable: true,
-            rating: true,
-            totalRides: true,
-            vehicle: {
-              select: {
-                id: true,
-                type: true,
-                brand: true,
-                model: true,
-                licensePlate: true
-              }
-            }
-          }
-        }
-      }
-    });
-
-    if (!user) {
-      const response: ApiResponse = {
-        success: false,
-        error: {
-          message: 'Utilisateur non trouvé',
-          code: 'USER_NOT_FOUND'
-        }
-      };
-      return res.status(404).json(response);
-    }
-
-    const response: ApiResponse = {
-      success: true,
-      data: user
-    };
-
-    res.json(response);
+    const user = await UserService.getUserById(id, true);
+    res.json(createSuccessResponse(user));
   } catch (error) {
     console.error('Erreur lors de la récupération des détails utilisateur:', error);
-    const response: ApiResponse = {
-      success: false,
-      error: {
-        message: 'Erreur lors de la récupération des détails utilisateur',
-        code: 'USER_DETAILS_ERROR'
-      }
-    };
-    res.status(500).json(response);
+    res.status(500).json(createErrorResponse('Erreur lors de la récupération des détails utilisateur', 'USER_DETAILS_ERROR'));
   }
 };
 
@@ -1268,36 +202,11 @@ export const getUserDetails = async (req: Request, res: Response) => {
 export const toggleUserStatus = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { isActive } = req.body;
-
-    const user = await prisma.user.update({
-      where: { id },
-      data: { isActive },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        isActive: true
-      }
-    });
-
-    const response: ApiResponse = {
-      success: true,
-      data: user
-    };
-
-    res.json(response);
+    const user = await UserService.toggleUserStatus(id);
+    res.json(createSuccessResponse(user));
   } catch (error) {
     console.error('Erreur lors de la mise à jour du statut utilisateur:', error);
-    const response: ApiResponse = {
-      success: false,
-      error: {
-        message: 'Erreur lors de la mise à jour du statut utilisateur',
-        code: 'USER_STATUS_UPDATE_ERROR'
-      }
-    };
-    res.status(500).json(response);
+    res.status(500).json(createErrorResponse('Erreur lors de la mise à jour du statut utilisateur', 'USER_STATUS_UPDATE_ERROR'));
   }
 };
 
@@ -1306,26 +215,82 @@ export const getBookings = async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
-    const status = req.query.status as string;
-    const serviceType = req.query.serviceType as string;
-    const skip = (page - 1) * limit;
+    const filters = {
+      status: req.query.status as string,
+      serviceType: req.query.serviceType as string
+    };
 
-    const where: any = {};
-    if (status) where.status = status;
-    if (serviceType) where.serviceType = serviceType;
+    const { bookings, total } = await BookingService.getBookings(page, limit, filters);
+    res.json(createPaginatedResponse(bookings, total, page, limit));
+  } catch (error) {
+    console.error('Erreur lors de la récupération des réservations:', error);
+    res.status(500).json(createErrorResponse('Erreur lors de la récupération des réservations', 'BOOKINGS_FETCH_ERROR'));
+  }
+};
 
-    const [bookings, total] = await Promise.all([
-      prisma.booking.findMany({
-        where,
-        skip,
-        take: limit,
+// Assigner un chauffeur à une réservation
+export const assignDriver = async (req: Request, res: Response) => {
+  try {
+    const { bookingId } = req.params;
+    const { driverId, vehicleId } = req.body;
+    const booking = await BookingService.assignDriver(bookingId, driverId, vehicleId);
+    res.json(createSuccessResponse(booking));
+  } catch (error) {
+    console.error('Erreur lors de l\'assignation du chauffeur:', error);
+    res.status(500).json(createErrorResponse('Erreur lors de l\'assignation du chauffeur', 'DRIVER_ASSIGNMENT_ERROR'));
+  }
+};
+
+// Désassigner un chauffeur d'une réservation
+export const unassignDriver = async (req: Request, res: Response) => {
+  try {
+    const { bookingId } = req.params;
+    const booking = await BookingService.unassignDriver(bookingId);
+    res.json(createSuccessResponse(booking));
+  } catch (error) {
+    console.error('Erreur lors de la désassignation du chauffeur:', error);
+    res.status(500).json(createErrorResponse('Erreur lors de la désassignation du chauffeur', 'DRIVER_UNASSIGNMENT_ERROR'));
+  }
+};
+
+// Marquer une réservation comme terminée avec paiement
+export const completeBooking = async (req: Request, res: Response) => {
+  try {
+    const { bookingId } = req.params;
+    const { method, amount, transactionId } = req.body;
+
+    // Vérifier si la réservation existe et est en cours
+    const existingBooking = await prisma.booking.findUnique({ 
+      where: { id: bookingId },
+      include: {
+        user: true
+      }
+    });
+    
+    if (!existingBooking) {
+      return res.status(404).json(createErrorResponse('Réservation non trouvée', 'BOOKING_NOT_FOUND'));
+    }
+
+    if (existingBooking.status !== 'IN_PROGRESS') {
+      return res.status(400).json(createErrorResponse('Seules les réservations en cours peuvent être marquées comme terminées', 'INVALID_BOOKING_STATUS'));
+    }
+
+    // Utiliser une transaction pour s'assurer de la cohérence des données
+    const result = await prisma.$transaction(async (tx) => {
+      // Marquer la réservation comme terminée
+      const updatedBooking = await tx.booking.update({
+        where: { id: bookingId },
+        data: {
+          status: 'COMPLETED'
+        },
         include: {
           user: {
             select: {
               id: true,
               firstName: true,
               lastName: true,
-              phone: true
+              phone: true,
+              email: true
             }
           },
           driver: {
@@ -1349,138 +314,104 @@ export const getBookings = async (req: Request, res: Response) => {
               licensePlate: true
             }
           }
-        },
-        orderBy: { createdAt: 'desc' }
-      }),
-      prisma.booking.count({ where })
-    ]);
+        }
+      });
 
-    const response: ApiResponse = {
-      success: true,
-      data: bookings,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit)
-      }
-    };
+      // Créer l'enregistrement de paiement
+      const payment = await tx.payment.create({
+        data: {
+          bookingId: bookingId,
+          userId: existingBooking.userId,
+          amount: amount,
+          currency: 'XOF',
+          method: method,
+          status: 'COMPLETED',
+          transactionId: transactionId
+        }
+      });
 
-    res.json(response);
+      return { booking: updatedBooking, payment };
+    });
+
+    res.json(createSuccessResponse({
+      booking: result.booking,
+      payment: result.payment
+    }));
   } catch (error) {
-    console.error('Erreur lors de la récupération des réservations:', error);
-    const response: ApiResponse = {
-      success: false,
-      error: {
-        message: 'Erreur lors de la récupération des réservations',
-        code: 'BOOKINGS_FETCH_ERROR'
-      }
-    };
-    res.status(500).json(response);
+    console.error('Erreur lors de la finalisation de la réservation:', error);
+    res.status(500).json(createErrorResponse('Erreur lors de la finalisation de la réservation', 'BOOKING_COMPLETION_ERROR'));
   }
 };
 
-// Assigner un chauffeur à une réservation
-export const assignDriver = async (req: Request, res: Response) => {
+// Récupérer la liste des paiements
+export const getPayments = async (req: Request, res: Response) => {
   try {
-    const { bookingId } = req.params;
-    const { driverId, vehicleId } = req.body;
+    const { page = '1', limit = '10', status, method, search } = req.query;
+    const pageNum = parseInt(page as string);
+    const limitNum = parseInt(limit as string);
+    const offset = (pageNum - 1) * limitNum;
 
-    const booking = await prisma.booking.update({
-      where: { id: bookingId },
-      data: {
-        driverId,
-        vehicleId,
-        status: 'ASSIGNED'
-      },
-      include: {
-        user: {
-          select: {
-            firstName: true,
-            lastName: true,
-            phone: true
+    // Construire les filtres
+    const where: any = {};
+    
+    if (status) {
+      where.status = status;
+    }
+    
+    if (method) {
+      where.method = method;
+    }
+    
+    if (search) {
+      where.OR = [
+        {
+          booking: {
+            user: {
+              OR: [
+                { firstName: { contains: search as string, mode: 'insensitive' } },
+                { lastName: { contains: search as string, mode: 'insensitive' } }
+              ]
+            }
           }
         },
-        driver: {
-          select: {
-            user: {
-              select: {
-                firstName: true,
-                lastName: true,
-                phone: true
+        {
+          transactionId: { contains: search as string, mode: 'insensitive' }
+        }
+      ];
+    }
+
+    // Récupérer les paiements avec pagination
+    const [payments, totalCount] = await Promise.all([
+      prisma.payment.findMany({
+        where,
+        include: {
+          booking: {
+            select: {
+              id: true,
+              pickupLocation: true,
+              destination: true,
+              user: {
+                select: {
+                  firstName: true,
+                  lastName: true
+                }
               }
             }
           }
         },
-        vehicle: {
-          select: {
-            type: true,
-            brand: true,
-            model: true,
-            licensePlate: true
-          }
-        }
-      }
-    });
+        orderBy: {
+          createdAt: 'desc'
+        },
+        skip: offset,
+        take: limitNum
+      }),
+      prisma.payment.count({ where })
+    ]);
 
-    const response: ApiResponse = {
-      success: true,
-      data: booking
-    };
-
-    res.json(response);
+    res.json(createPaginatedResponse(payments, totalCount, pageNum, limitNum));
   } catch (error) {
-    console.error('Erreur lors de l\'assignation du chauffeur:', error);
-    const response: ApiResponse = {
-      success: false,
-      error: {
-        message: 'Erreur lors de l\'assignation du chauffeur',
-        code: 'DRIVER_ASSIGNMENT_ERROR'
-      }
-    };
-    res.status(500).json(response);
-  }
-};
-
-// Désassigner un chauffeur d'une réservation
-export const unassignDriver = async (req: Request, res: Response) => {
-  try {
-    const { bookingId } = req.params;
-
-    const booking = await prisma.booking.update({
-      where: { id: bookingId },
-      data: {
-        driverId: null,
-        vehicleId: null,
-        status: 'PENDING'
-      },
-      include: {
-        user: {
-          select: {
-            firstName: true,
-            lastName: true,
-            phone: true
-          }
-        }
-      }
-    });
-
-    const response: ApiResponse = {
-      success: true,
-      data: booking
-    };
-
-    res.json(response);
-  } catch (error) {
-    console.error('Erreur lors de la désassignation du chauffeur:', error);
-    const response: ApiResponse = {
-      success: false,
-      error: {
-        message: 'Erreur lors de la désassignation du chauffeur',
-        code: 'DRIVER_UNASSIGNMENT_ERROR'
-      }
-    };
-    res.status(500).json(response);
+    console.error('Erreur lors de la récupération des paiements:', error);
+    res.status(500).json(createErrorResponse('Erreur lors de la récupération des paiements', 'PAYMENTS_FETCH_ERROR'));
   }
 };
 
@@ -1514,22 +445,10 @@ export const getAvailableDrivers = async (req: Request, res: Response) => {
       }
     });
 
-    const response: ApiResponse = {
-      success: true,
-      data: drivers
-    };
-
-    res.json(response);
+    res.json(createSuccessResponse(drivers));
   } catch (error) {
     console.error('Erreur lors de la récupération des chauffeurs disponibles:', error);
-    const response: ApiResponse = {
-      success: false,
-      error: {
-        message: 'Erreur lors de la récupération des chauffeurs disponibles',
-        code: 'AVAILABLE_DRIVERS_ERROR'
-      }
-    };
-    res.status(500).json(response);
+    res.status(500).json(createErrorResponse('Erreur lors de la récupération des chauffeurs disponibles', 'AVAILABLE_DRIVERS_ERROR'));
   }
 };
 
@@ -1548,22 +467,10 @@ export const getRevenueStats = async (req: Request, res: Response) => {
       CACHE_TTL.MEDIUM // Cache pendant 5 minutes
     );
 
-    const response: ApiResponse = {
-      success: true,
-      data: stats
-    };
-
-    res.json(response);
+    res.json(createSuccessResponse(stats));
   } catch (error) {
     console.error('Erreur lors de la récupération des statistiques de revenus:', error);
-    const response: ApiResponse = {
-      success: false,
-      error: {
-        message: 'Erreur lors de la récupération des statistiques de revenus',
-        code: 'REVENUE_STATS_ERROR'
-      }
-    };
-    res.status(500).json(response);
+    res.status(500).json(createErrorResponse('Erreur lors de la récupération des statistiques de revenus', 'REVENUE_STATS_ERROR'));
   }
 };
 
@@ -1631,217 +538,35 @@ const calculateRevenueStats = async (period: string) => {
 // CRUD Utilisateurs
 export const createUser = async (req: Request, res: Response) => {
   try {
-    const { email, phone, firstName, lastName, password, role } = req.body;
-
-    // Vérifier si l'utilisateur existe déjà
-    const existingUser = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { email },
-          { phone }
-        ]
-      }
-    });
-
-    if (existingUser) {
-      const response: ApiResponse = {
-        success: false,
-        error: {
-          message: 'Un utilisateur avec cet email ou ce téléphone existe déjà',
-          code: 'USER_ALREADY_EXISTS'
-        }
-      };
-      return res.status(400).json(response);
-    }
-
-    // Hasher le mot de passe
-    const bcrypt = require('bcryptjs');
-    const hashedPassword = await bcrypt.hash(password, 12);
-
-    const user = await prisma.user.create({
-      data: {
-        email,
-        phone,
-        firstName,
-        lastName,
-        password: hashedPassword,
-        role: role || 'CLIENT'
-      },
-      select: {
-        id: true,
-        email: true,
-        phone: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        isActive: true,
-        createdAt: true
-      }
-    });
-
-    const response: ApiResponse = {
-      success: true,
-      data: user
-    };
-
-    res.status(201).json(response);
+    const userData = req.body;
+    const user = await UserService.createUser(userData);
+    res.status(201).json(createSuccessResponse(user));
   } catch (error) {
     console.error('Erreur lors de la création de l\'utilisateur:', error);
-    const response: ApiResponse = {
-      success: false,
-      error: {
-        message: 'Erreur lors de la création de l\'utilisateur',
-        code: 'USER_CREATE_ERROR'
-      }
-    };
-    res.status(500).json(response);
+    res.status(500).json(createErrorResponse('Erreur lors de la création de l\'utilisateur', 'USER_CREATE_ERROR'));
   }
 };
 
 export const updateUser = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { email, phone, firstName, lastName, role, isActive } = req.body;
-
-    // Vérifier si l'utilisateur existe
-    const existingUser = await prisma.user.findUnique({ where: { id } });
-    if (!existingUser) {
-      const response: ApiResponse = {
-        success: false,
-        error: {
-          message: 'Utilisateur non trouvé',
-          code: 'USER_NOT_FOUND'
-        }
-      };
-      return res.status(404).json(response);
-    }
-
-    // Vérifier les doublons email/phone si modifiés
-    if (email !== existingUser.email || phone !== existingUser.phone) {
-      const duplicate = await prisma.user.findFirst({
-        where: {
-          AND: [
-            { id: { not: id } },
-            {
-              OR: [
-                { email },
-                { phone }
-              ]
-            }
-          ]
-        }
-      });
-
-      if (duplicate) {
-        const response: ApiResponse = {
-          success: false,
-          error: {
-            message: 'Un autre utilisateur avec cet email ou ce téléphone existe déjà',
-            code: 'USER_DUPLICATE_ERROR'
-          }
-        };
-        return res.status(400).json(response);
-      }
-    }
-
-    const user = await prisma.user.update({
-      where: { id },
-      data: {
-        email,
-        phone,
-        firstName,
-        lastName,
-        role,
-        isActive
-      },
-      select: {
-        id: true,
-        email: true,
-        phone: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        isActive: true,
-        createdAt: true,
-        updatedAt: true
-      }
-    });
-
-    const response: ApiResponse = {
-      success: true,
-      data: user
-    };
-
-    res.json(response);
+    const userData = req.body;
+    const user = await UserService.updateUser(id, userData);
+    res.json(createSuccessResponse(user));
   } catch (error) {
     console.error('Erreur lors de la mise à jour de l\'utilisateur:', error);
-    const response: ApiResponse = {
-      success: false,
-      error: {
-        message: 'Erreur lors de la mise à jour de l\'utilisateur',
-        code: 'USER_UPDATE_ERROR'
-      }
-    };
-    res.status(500).json(response);
+    res.status(500).json(createErrorResponse('Erreur lors de la mise à jour de l\'utilisateur', 'USER_UPDATE_ERROR'));
   }
 };
 
 export const deleteUser = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-
-    // Vérifier si l'utilisateur existe
-    const existingUser = await prisma.user.findUnique({ where: { id } });
-    if (!existingUser) {
-      const response: ApiResponse = {
-        success: false,
-        error: {
-          message: 'Utilisateur non trouvé',
-          code: 'USER_NOT_FOUND'
-        }
-      };
-      return res.status(404).json(response);
-    }
-
-    // Vérifier s'il y a des réservations actives
-    const activeBookings = await prisma.booking.count({
-      where: {
-        userId: id,
-        status: {
-          in: ['PENDING', 'CONFIRMED', 'ASSIGNED', 'IN_PROGRESS']
-        }
-      }
-    });
-
-    if (activeBookings > 0) {
-      const response: ApiResponse = {
-        success: false,
-        error: {
-          message: 'Impossible de supprimer un utilisateur avec des réservations actives',
-          code: 'USER_HAS_ACTIVE_BOOKINGS'
-        }
-      };
-      return res.status(400).json(response);
-    }
-
-    await prisma.user.delete({ where: { id } });
-
-    const response: ApiResponse = {
-      success: true,
-      data: { deleted: true }
-    };
-
-    res.json(response);
+    await UserService.deleteUser(id);
+    res.json(createSuccessResponse({ deleted: true }));
   } catch (error) {
     console.error('Erreur lors de la suppression de l\'utilisateur:', error);
-    const response: ApiResponse = {
-      success: false,
-      error: {
-        message: 'Erreur lors de la suppression de l\'utilisateur',
-        code: 'USER_DELETE_ERROR'
-      }
-    };
-    res.status(500).json(response);
+    res.status(500).json(createErrorResponse('Erreur lors de la suppression de l\'utilisateur', 'USER_DELETE_ERROR'));
   }
 };
 
@@ -1860,14 +585,7 @@ const restoreFromJsonBackup = async (req: Request, res: Response, backupPath: st
     
   } catch (error: any) {
     console.error('❌ JSON backup file restore failed:', error.message);
-    const response: ApiResponse = {
-      success: false,
-      error: {
-        message: `Erreur lors de la lecture du fichier JSON: ${error.message}`,
-        code: 'JSON_FILE_READ_ERROR'
-      }
-    };
-    res.status(500).json(response);
+    res.status(500).json(createErrorResponse(`Erreur lors de la lecture du fichier JSON: ${error.message}`, 'JSON_FILE_READ_ERROR'));
   }
 };
 
@@ -1877,14 +595,7 @@ const restoreFromJsonData = async (req: Request, res: Response, backupData: any)
     
     // Validate backup data structure
     if (!backupData.data || !backupData.metadata) {
-      const response: ApiResponse = {
-        success: false,
-        error: {
-          message: 'Format de sauvegarde JSON invalide',
-          code: 'INVALID_JSON_FORMAT'
-        }
-      };
-      return res.status(400).json(response);
+      return res.status(400).json(createErrorResponse('Format de sauvegarde JSON invalide', 'INVALID_JSON_FORMAT'));
     }
     
     const { data } = backupData;
@@ -2053,30 +764,19 @@ const restoreFromJsonData = async (req: Request, res: Response, backupData: any)
     
     console.log('✅ JSON restore completed successfully');
     
-    const response: ApiResponse = {
-      success: true,
-      data: {
-        message: 'Base de données restaurée avec succès depuis la sauvegarde JSON',
-        restored: {
-          filename: backupData.metadata?.created || 'JSON Data',
-          restoredAt: new Date().toLocaleString('fr-FR'),
-          counts: restoredCounts,
-          totalRecords: Object.values(restoredCounts).reduce((a, b) => a + b, 0)
-        }
+    res.json(createSuccessResponse({
+      message: 'Base de données restaurée avec succès depuis la sauvegarde JSON',
+      restored: {
+        filename: backupData.metadata?.created || 'JSON Data',
+        restoredAt: new Date().toLocaleString('fr-FR'),
+        counts: restoredCounts,
+        totalRecords: Object.values(restoredCounts).reduce((a, b) => a + b, 0)
       }
-    };
-    res.json(response);
+    }));
     
   } catch (error: any) {
     console.error('❌ JSON restore failed:', error.message);
-    const response: ApiResponse = {
-      success: false,
-      error: {
-        message: `Erreur lors de la restauration JSON: ${error.message}`,
-        code: 'JSON_RESTORE_ERROR'
-      }
-    };
-    res.status(500).json(response);
+    res.status(500).json(createErrorResponse(`Erreur lors de la restauration JSON: ${error.message}`, 'JSON_RESTORE_ERROR'));
   }
 };
 
@@ -2151,41 +851,29 @@ const createPrismaBackup = async (req: Request, res: Response) => {
     
     console.log('✅ Prisma backup completed successfully');
     
-    const response: ApiResponse = {
-      success: true,
-      data: {
-        message: 'Sauvegarde créée avec succès (format JSON)',
-        backup: {
-          filename: backupFile,
-          size: fileSizeInMB,
-          path: `/tmp/${backupFile}`, // Serverless temp path
-          created: new Date().toLocaleString('fr-FR'),
-          type: 'json',
-          records: {
-            users: users.length,
-            drivers: drivers.length,
-            vehicles: vehicles.length,
-            bookings: bookings.length,
-            payments: payments.length,
-            services: services.length
-          }
-        },
-        downloadUrl: `data:application/json;charset=utf-8,${encodeURIComponent(backupJson)}`
-      }
-    };
-    
-    res.json(response);
+    res.json(createSuccessResponse({
+      message: 'Sauvegarde créée avec succès (format JSON)',
+      backup: {
+        filename: backupFile,
+        size: fileSizeInMB,
+        path: `/tmp/${backupFile}`, // Serverless temp path
+        created: new Date().toLocaleString('fr-FR'),
+        type: 'json',
+        records: {
+          users: users.length,
+          drivers: drivers.length,
+          vehicles: vehicles.length,
+          bookings: bookings.length,
+          payments: payments.length,
+          services: services.length
+        }
+      },
+      downloadUrl: `data:application/json;charset=utf-8,${encodeURIComponent(backupJson)}`
+    }));
     
   } catch (error: any) {
     console.error('❌ Prisma backup failed:', error.message);
-    const response: ApiResponse = {
-      success: false,
-      error: {
-        message: `Erreur lors de la sauvegarde Prisma: ${error.message}`,
-        code: 'PRISMA_BACKUP_ERROR'
-      }
-    };
-    res.status(500).json(response);
+    res.status(500).json(createErrorResponse(`Erreur lors de la sauvegarde Prisma: ${error.message}`, 'PRISMA_BACKUP_ERROR'));
   }
 };
 
@@ -2205,14 +893,7 @@ export const createDatabaseBackup = async (req: Request, res: Response) => {
     const directDbUrl = process.env.DIRECT_DATABASE_URL;
     
     if (!directDbUrl) {
-      const response: ApiResponse = {
-        success: false,
-        error: {
-          message: 'DIRECT_DATABASE_URL not configured',
-          code: 'DATABASE_CONFIG_ERROR'
-        }
-      };
-      return res.status(500).json(response);
+      return res.status(500).json(createErrorResponse('DIRECT_DATABASE_URL not configured', 'DATABASE_CONFIG_ERROR'));
     }
     
     // Create backups directory if it doesn't exist
@@ -2245,40 +926,22 @@ export const createDatabaseBackup = async (req: Request, res: Response) => {
       
       console.log('✅ Backup completed successfully from dashboard');
       
-      const response: ApiResponse = {
-        success: true,
-        data: {
-          message: 'Sauvegarde créée avec succès',
-          backup: {
-            filename: backupFile,
-            size: fileSizeInMB,
-            path: backupPath,
-            created: new Date().toLocaleString('fr-FR')
-          }
+      res.json(createSuccessResponse({
+        message: 'Sauvegarde créée avec succès',
+        backup: {
+          filename: backupFile,
+          size: fileSizeInMB,
+          path: backupPath,
+          created: new Date().toLocaleString('fr-FR')
         }
-      };
-      res.json(response);
+      }));
     } else {
-      const response: ApiResponse = {
-        success: false,
-        error: {
-          message: 'Le fichier de sauvegarde n\'a pas été créé',
-          code: 'BACKUP_FILE_ERROR'
-        }
-      };
-      res.status(500).json(response);
+      res.status(500).json(createErrorResponse('Le fichier de sauvegarde n\'a pas été créé', 'BACKUP_FILE_ERROR'));
     }
     
   } catch (error: any) {
     console.error('❌ Backup failed from dashboard:', error.message);
-    const response: ApiResponse = {
-      success: false,
-      error: {
-        message: `Erreur lors de la sauvegarde: ${error.message}`,
-        code: 'BACKUP_ERROR'
-      }
-    };
-    res.status(500).json(response);
+    res.status(500).json(createErrorResponse(`Erreur lors de la sauvegarde: ${error.message}`, 'BACKUP_ERROR'));
   }
 };
 
@@ -2291,25 +954,11 @@ export const restoreDatabase = async (req: Request, res: Response) => {
     
     if (isServerless) {
       // In serverless environments, restore is not supported due to limitations
-      const response: ApiResponse = {
-        success: false,
-        error: {
-          message: 'La restauration n\'est pas disponible en environnement serverless. Utilisez les sauvegardes JSON pour migrer les données manuellement.',
-          code: 'RESTORE_NOT_SUPPORTED_SERVERLESS'
-        }
-      };
-      return res.status(400).json(response);
+      return res.status(400).json(createErrorResponse('La restauration n\'est pas disponible en environnement serverless. Utilisez les sauvegardes JSON pour migrer les données manuellement.', 'RESTORE_NOT_SUPPORTED_SERVERLESS'));
     }
     
     if (!backupFile) {
-      const response: ApiResponse = {
-        success: false,
-        error: {
-          message: 'Nom du fichier de sauvegarde requis',
-          code: 'BACKUP_FILE_REQUIRED'
-        }
-      };
-      return res.status(400).json(response);
+      return res.status(400).json(createErrorResponse('Nom du fichier de sauvegarde requis', 'BACKUP_FILE_REQUIRED'));
     }
     
     console.log('🔄 Starting database restore from dashboard...');
@@ -2318,14 +967,7 @@ export const restoreDatabase = async (req: Request, res: Response) => {
     const directDbUrl = process.env.DIRECT_DATABASE_URL;
     
     if (!directDbUrl) {
-      const response: ApiResponse = {
-        success: false,
-        error: {
-          message: 'DIRECT_DATABASE_URL not configured',
-          code: 'DATABASE_CONFIG_ERROR'
-        }
-      };
-      return res.status(500).json(response);
+      return res.status(500).json(createErrorResponse('DIRECT_DATABASE_URL not configured', 'DATABASE_CONFIG_ERROR'));
     }
     
     // Check if backup file exists
@@ -2333,14 +975,7 @@ export const restoreDatabase = async (req: Request, res: Response) => {
     const backupPath = path.join(backupsDir, backupFile);
     
     if (!fs.existsSync(backupPath)) {
-      const response: ApiResponse = {
-        success: false,
-        error: {
-          message: 'Fichier de sauvegarde non trouvé',
-          code: 'BACKUP_FILE_NOT_FOUND'
-        }
-      };
-      return res.status(404).json(response);
+      return res.status(404).json(createErrorResponse('Fichier de sauvegarde non trouvé', 'BACKUP_FILE_NOT_FOUND'));
     }
     
     // Check if it's a JSON backup (Prisma format)
@@ -2366,28 +1001,17 @@ export const restoreDatabase = async (req: Request, res: Response) => {
     
     console.log('✅ Database restored successfully from dashboard');
     
-    const response: ApiResponse = {
-      success: true,
-      data: {
-        message: 'Base de données restaurée avec succès',
-        restored: {
-          filename: backupFile,
-          restoredAt: new Date().toLocaleString('fr-FR')
-        }
+    res.json(createSuccessResponse({
+      message: 'Base de données restaurée avec succès',
+      restored: {
+        filename: backupFile,
+        restoredAt: new Date().toLocaleString('fr-FR')
       }
-    };
-    res.json(response);
+    }));
     
   } catch (error: any) {
     console.error('❌ Restore failed from dashboard:', error.message);
-    const response: ApiResponse = {
-      success: false,
-      error: {
-        message: `Erreur lors de la restauration: ${error.message}`,
-        code: 'RESTORE_ERROR'
-      }
-    };
-    res.status(500).json(response);
+    res.status(500).json(createErrorResponse(`Erreur lors de la restauration: ${error.message}`, 'RESTORE_ERROR'));
   }
 };
 
@@ -2399,28 +1023,20 @@ export const getBackupsList = async (req: Request, res: Response) => {
     if (isServerless) {
       // In serverless environments, we can't store persistent files
       // Return empty list with information about backup limitations
-      const response: ApiResponse = {
-        success: true,
-        data: {
-          backups: [],
-          message: 'Les sauvegardes en environnement serverless sont téléchargées directement',
-          info: 'En mode serverless, les sauvegardes sont générées à la demande et téléchargées immédiatement'
-        }
-      };
-      return res.json(response);
+      return res.json(createSuccessResponse({
+        backups: [],
+        message: 'Les sauvegardes en environnement serverless sont téléchargées directement',
+        info: 'En mode serverless, les sauvegardes sont générées à la demande et téléchargées immédiatement'
+      }));
     }
     
     const backupsDir = path.join(__dirname, '..', '..', 'backups');
     
     if (!fs.existsSync(backupsDir)) {
-      const response: ApiResponse = {
-        success: true,
-        data: {
-          backups: [],
-          message: 'Aucune sauvegarde disponible'
-        }
-      };
-      return res.json(response);
+      return res.json(createSuccessResponse({
+        backups: [],
+        message: 'Aucune sauvegarde disponible'
+      }));
     }
     
     const backupFiles = fs.readdirSync(backupsDir)
@@ -2438,25 +1054,14 @@ export const getBackupsList = async (req: Request, res: Response) => {
       })
       .sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime()); // Sort by newest first
     
-    const response: ApiResponse = {
-      success: true,
-      data: {
-        backups: backupFiles,
-        count: backupFiles.length
-      }
-    };
-    res.json(response);
+    res.json(createSuccessResponse({
+      backups: backupFiles,
+      count: backupFiles.length
+    }));
     
   } catch (error: any) {
     console.error('❌ Error listing backups:', error.message);
-    const response: ApiResponse = {
-      success: false,
-      error: {
-        message: `Erreur lors de la récupération des sauvegardes: ${error.message}`,
-        code: 'BACKUPS_LIST_ERROR'
-      }
-    };
-    res.status(500).json(response);
+    res.status(500).json(createErrorResponse(`Erreur lors de la récupération des sauvegardes: ${error.message}`, 'BACKUPS_LIST_ERROR'));
   }
 };
 
@@ -2465,40 +1070,19 @@ export const deleteBackup = async (req: Request, res: Response) => {
     const { filename } = req.params;
     
     if (!filename) {
-      const response: ApiResponse = {
-        success: false,
-        error: {
-          message: 'Nom du fichier requis',
-          code: 'FILENAME_REQUIRED'
-        }
-      };
-      return res.status(400).json(response);
+      return res.status(400).json(createErrorResponse('Nom du fichier requis', 'FILENAME_REQUIRED'));
     }
     
     // Security check: ensure filename is a valid backup file
     if (!filename.startsWith('wemoov-backup-') || !filename.endsWith('.bak')) {
-      const response: ApiResponse = {
-        success: false,
-        error: {
-          message: 'Nom de fichier invalide',
-          code: 'INVALID_FILENAME'
-        }
-      };
-      return res.status(400).json(response);
+      return res.status(400).json(createErrorResponse('Nom de fichier invalide', 'INVALID_FILENAME'));
     }
     
     const backupsDir = path.join(__dirname, '..', '..', 'backups');
     const filePath = path.join(backupsDir, filename);
     
     if (!fs.existsSync(filePath)) {
-      const response: ApiResponse = {
-        success: false,
-        error: {
-          message: 'Fichier de sauvegarde non trouvé',
-          code: 'BACKUP_FILE_NOT_FOUND'
-        }
-      };
-      return res.status(404).json(response);
+      return res.status(404).json(createErrorResponse('Fichier de sauvegarde non trouvé', 'BACKUP_FILE_NOT_FOUND'));
     }
     
     // Delete the file
@@ -2506,24 +1090,13 @@ export const deleteBackup = async (req: Request, res: Response) => {
     
     console.log(`✅ Backup file deleted: ${filename}`);
     
-    const response: ApiResponse = {
-      success: true,
-      data: {
-        message: 'Sauvegarde supprimée avec succès',
-        deletedFile: filename
-      }
-    };
-    res.json(response);
+    res.json(createSuccessResponse({
+      message: 'Sauvegarde supprimée avec succès',
+      deletedFile: filename
+    }));
     
   } catch (error: any) {
     console.error('❌ Error deleting backup:', error.message);
-    const response: ApiResponse = {
-      success: false,
-      error: {
-        message: `Erreur lors de la suppression: ${error.message}`,
-        code: 'DELETE_BACKUP_ERROR'
-      }
-    };
-    res.status(500).json(response);
+    res.status(500).json(createErrorResponse(`Erreur lors de la suppression: ${error.message}`, 'DELETE_BACKUP_ERROR'));
   }
 };

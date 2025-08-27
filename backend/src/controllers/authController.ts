@@ -3,6 +3,7 @@ import { prisma } from '../utils/database.js';
 import { hashPassword, verifyPassword, generateToken } from '../utils/auth.js';
 import { validateUserData, validateLoginData, normalizePhoneNumber } from '../utils/validation.js';
 import { CreateUserRequest, LoginRequest, ApiResponse, AuthResponse } from '../types/index.js';
+import { createSuccessResponse, createErrorResponse } from '../utils/responseHelpers.js';
 
 // Inscription d'un nouvel utilisateur
 export const register = async (req: Request, res: Response) => {
@@ -16,9 +17,10 @@ export const register = async (req: Request, res: Response) => {
         success: false,
         error: {
           message: 'Données invalides',
+          code: 'VALIDATION_ERROR',
           details: validationErrors
         }
-      } as ApiResponse);
+      });
     }
 
     // Normaliser le numéro de téléphone
@@ -35,14 +37,10 @@ export const register = async (req: Request, res: Response) => {
     });
 
     if (existingUser) {
-      return res.status(409).json({
-        success: false,
-        error: {
-          message: existingUser.email === userData.email.toLowerCase() 
-            ? 'Un compte avec cet email existe déjà'
-            : 'Un compte avec ce numéro de téléphone existe déjà'
-        }
-      } as ApiResponse);
+      const message = existingUser.email === userData.email.toLowerCase() 
+        ? 'Un compte avec cet email existe déjà'
+        : 'Un compte avec ce numéro de téléphone existe déjà';
+      return res.status(409).json(createErrorResponse(message, 'USER_ALREADY_EXISTS'));
     }
 
     // Hacher le mot de passe
@@ -74,23 +72,15 @@ export const register = async (req: Request, res: Response) => {
     // Générer le token JWT
     const token = generateToken(user);
 
-    res.status(201).json({
-      success: true,
-      data: {
-        user,
-        token,
-        expiresIn: process.env.JWT_EXPIRES_IN || '7d'
-      } as AuthResponse
-    } as ApiResponse<AuthResponse>);
+    res.status(201).json(createSuccessResponse({
+      user,
+      token,
+      expiresIn: process.env.JWT_EXPIRES_IN || '7d'
+    } as AuthResponse));
 
   } catch (error) {
     console.error('Erreur lors de l\'inscription:', error);
-    res.status(500).json({
-      success: false,
-      error: {
-        message: 'Erreur serveur lors de l\'inscription'
-      }
-    } as ApiResponse);
+    res.status(500).json(createErrorResponse('Erreur serveur lors de l\'inscription', 'REGISTRATION_ERROR'));
   }
 };
 
@@ -106,9 +96,10 @@ export const login = async (req: Request, res: Response) => {
         success: false,
         error: {
           message: 'Données invalides',
+          code: 'VALIDATION_ERROR',
           details: validationErrors
         }
-      } as ApiResponse);
+      });
     }
 
     // Rechercher l'utilisateur
@@ -119,33 +110,18 @@ export const login = async (req: Request, res: Response) => {
     });
 
     if (!user) {
-      return res.status(401).json({
-        success: false,
-        error: {
-          message: 'Email ou mot de passe incorrect'
-        }
-      } as ApiResponse);
+      return res.status(401).json(createErrorResponse('Email ou mot de passe incorrect', 'INVALID_CREDENTIALS'));
     }
 
     // Vérifier si le compte est actif
     if (!user.isActive) {
-      return res.status(401).json({
-        success: false,
-        error: {
-          message: 'Compte désactivé. Contactez le support.'
-        }
-      } as ApiResponse);
+      return res.status(401).json(createErrorResponse('Compte désactivé. Contactez le support.', 'ACCOUNT_DISABLED'));
     }
 
     // Vérifier le mot de passe
     const isPasswordValid = await verifyPassword(loginData.password, user.password);
     if (!isPasswordValid) {
-      return res.status(401).json({
-        success: false,
-        error: {
-          message: 'Email ou mot de passe incorrect'
-        }
-      } as ApiResponse);
+      return res.status(401).json(createErrorResponse('Email ou mot de passe incorrect', 'INVALID_CREDENTIALS'));
     }
 
     // Générer le token JWT
@@ -154,23 +130,15 @@ export const login = async (req: Request, res: Response) => {
     // Retourner les données utilisateur (sans le mot de passe)
     const { password, ...userWithoutPassword } = user;
 
-    res.status(200).json({
-      success: true,
-      data: {
-        user: userWithoutPassword,
-        token,
-        expiresIn: process.env.JWT_EXPIRES_IN || '7d'
-      } as AuthResponse
-    } as ApiResponse<AuthResponse>);
+    res.status(200).json(createSuccessResponse({
+      user: userWithoutPassword,
+      token,
+      expiresIn: process.env.JWT_EXPIRES_IN || '7d'
+    } as AuthResponse));
 
   } catch (error) {
     console.error('Erreur lors de la connexion:', error);
-    res.status(500).json({
-      success: false,
-      error: {
-        message: 'Erreur serveur lors de la connexion'
-      }
-    } as ApiResponse);
+    res.status(500).json(createErrorResponse('Erreur serveur lors de la connexion', 'LOGIN_ERROR'));
   }
 };
 
@@ -178,12 +146,7 @@ export const login = async (req: Request, res: Response) => {
 export const getProfile = async (req: Request, res: Response) => {
   try {
     if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        error: {
-          message: 'Utilisateur non authentifié'
-        }
-      } as ApiResponse);
+      return res.status(401).json(createErrorResponse('Utilisateur non authentifié', 'UNAUTHENTICATED'));
     }
 
     // Récupérer les données complètes de l'utilisateur avec ses relations
@@ -225,27 +188,14 @@ export const getProfile = async (req: Request, res: Response) => {
     });
 
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        error: {
-          message: 'Utilisateur non trouvé'
-        }
-      } as ApiResponse);
+      return res.status(404).json(createErrorResponse('Utilisateur non trouvé', 'USER_NOT_FOUND'));
     }
 
-    res.status(200).json({
-      success: true,
-      data: user
-    } as ApiResponse);
+    res.status(200).json(createSuccessResponse(user));
 
   } catch (error) {
     console.error('Erreur lors de la récupération du profil:', error);
-    res.status(500).json({
-      success: false,
-      error: {
-        message: 'Erreur serveur lors de la récupération du profil'
-      }
-    } as ApiResponse);
+    res.status(500).json(createErrorResponse('Erreur serveur lors de la récupération du profil', 'PROFILE_ERROR'));
   }
 };
 
@@ -253,12 +203,7 @@ export const getProfile = async (req: Request, res: Response) => {
 export const updateProfile = async (req: Request, res: Response) => {
   try {
     if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        error: {
-          message: 'Utilisateur non authentifié'
-        }
-      } as ApiResponse);
+      return res.status(401).json(createErrorResponse('Utilisateur non authentifié', 'UNAUTHENTICATED'));
     }
 
     const { firstName, lastName, phone } = req.body;
@@ -267,24 +212,14 @@ export const updateProfile = async (req: Request, res: Response) => {
     // Validation et préparation des données à mettre à jour
     if (firstName !== undefined) {
       if (firstName.trim().length < 2) {
-        return res.status(400).json({
-          success: false,
-          error: {
-            message: 'Le prénom doit contenir au moins 2 caractères'
-          }
-        } as ApiResponse);
+        return res.status(400).json(createErrorResponse('Le prénom doit contenir au moins 2 caractères', 'VALIDATION_ERROR'));
       }
       updateData.firstName = firstName.trim();
     }
 
     if (lastName !== undefined) {
       if (lastName.trim().length < 2) {
-        return res.status(400).json({
-          success: false,
-          error: {
-            message: 'Le nom doit contenir au moins 2 caractères'
-          }
-        } as ApiResponse);
+        return res.status(400).json(createErrorResponse('Le nom doit contenir au moins 2 caractères', 'VALIDATION_ERROR'));
       }
       updateData.lastName = lastName.trim();
     }
@@ -301,12 +236,7 @@ export const updateProfile = async (req: Request, res: Response) => {
       });
 
       if (existingUser) {
-        return res.status(409).json({
-          success: false,
-          error: {
-            message: 'Ce numéro de téléphone est déjà utilisé'
-          }
-        } as ApiResponse);
+        return res.status(409).json(createErrorResponse('Ce numéro de téléphone est déjà utilisé', 'PHONE_ALREADY_EXISTS'));
       }
 
       updateData.phone = normalizedPhone;
@@ -329,18 +259,10 @@ export const updateProfile = async (req: Request, res: Response) => {
       }
     });
 
-    res.status(200).json({
-      success: true,
-      data: updatedUser
-    } as ApiResponse);
+    res.status(200).json(createSuccessResponse(updatedUser));
 
   } catch (error) {
     console.error('Erreur lors de la mise à jour du profil:', error);
-    res.status(500).json({
-      success: false,
-      error: {
-        message: 'Erreur serveur lors de la mise à jour du profil'
-      }
-    } as ApiResponse);
+    res.status(500).json(createErrorResponse('Erreur serveur lors de la mise à jour du profil', 'PROFILE_UPDATE_ERROR'));
   }
 };

@@ -13,7 +13,8 @@ import {
   CheckCircle2,
   AlertTriangle,
   XCircle,
-  PlayCircle
+  PlayCircle,
+  DollarSign
 } from 'lucide-react';
 
 interface Booking {
@@ -56,6 +57,7 @@ interface BookingCardProps {
   onAssign: (booking: Booking) => void;
   onView: (booking: Booking) => void;
   onDelete: (bookingId: string) => void;
+  onComplete?: (booking: Booking) => void;
   formatCurrency: (amount: number) => string;
 }
 
@@ -65,6 +67,7 @@ const BookingCard: React.FC<BookingCardProps> = ({
   onAssign,
   onView,
   onDelete,
+  onComplete,
   formatCurrency
 }) => {
   const getStatusConfig = (status: string) => {
@@ -127,6 +130,7 @@ const BookingCard: React.FC<BookingCardProps> = ({
 
   const statusConfig = getStatusConfig(booking.status);
   const canAssign = booking.status === 'PENDING' || booking.status === 'ASSIGNED';
+  const canComplete = booking.status === 'IN_PROGRESS' && onComplete;
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200 overflow-hidden">
@@ -164,6 +168,15 @@ const BookingCard: React.FC<BookingCardProps> = ({
               title={booking.driver ? "Réassigner le chauffeur" : "Assigner un chauffeur"}
             >
               <UserCheck className="h-4 w-4" />
+            </button>
+          )}
+          {canComplete && (
+            <button
+              onClick={() => onComplete(booking)}
+              className="p-2 text-green-500 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors"
+              title="Marquer comme terminée"
+            >
+              <DollarSign className="h-4 w-4" />
             </button>
           )}
           <button

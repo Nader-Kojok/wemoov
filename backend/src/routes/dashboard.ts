@@ -13,6 +13,7 @@ import {
   deleteBooking,
   assignDriver,
   unassignDriver,
+  completeBooking,
   getAvailableDrivers,
   getDrivers,
   createDriver,
@@ -22,6 +23,7 @@ import {
   createVehicle,
   updateVehicle,
   deleteVehicle,
+  getPayments,
   getRevenueStats,
   createDatabaseBackup,
   restoreDatabase,
@@ -54,6 +56,7 @@ router.put('/bookings/:id', updateBooking);
 router.delete('/bookings/:id', deleteBooking);
 router.patch('/bookings/:bookingId/assign', assignDriver);
 router.patch('/bookings/:bookingId/unassign', unassignDriver);
+router.patch('/bookings/:bookingId/complete', completeBooking);
 
 // Gestion des chauffeurs
 router.get('/drivers', getDrivers);
@@ -67,6 +70,9 @@ router.get('/vehicles', getVehicles);
 router.post('/vehicles', createVehicle);
 router.put('/vehicles/:id', updateVehicle);
 router.delete('/vehicles/:id', deleteVehicle);
+
+// Gestion des paiements
+router.get('/payments', getPayments);
 
 // Statistiques des revenus
 router.get('/revenue', getRevenueStats);
