@@ -39,6 +39,19 @@ interface BackupResponse {
         services: number;
       };
     };
+    restored?: {
+      filename: string;
+      restoredAt: string;
+      counts?: {
+        users: number;
+        drivers: number;
+        vehicles: number;
+        bookings: number;
+        payments: number;
+        services: number;
+      };
+      totalRecords?: number;
+    };
     backups?: BackupFile[];
     count?: number;
     downloadUrl?: string;
@@ -58,6 +71,8 @@ const DatabaseManagement: React.FC = () => {
   const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [jsonFile, setJsonFile] = useState<File | null>(null);
+  const [showJsonUpload, setShowJsonUpload] = useState(false);
 
   // Fetch available backups on component mount
   useEffect(() => {
@@ -140,8 +155,8 @@ const DatabaseManagement: React.FC = () => {
   };
 
   const handleRestore = async () => {
-    if (!selectedBackup) {
-      setMessage({ type: 'error', text: 'Veuillez sélectionner une sauvegarde à restaurer' });
+    if (!selectedBackup && !jsonFile) {
+      setMessage({ type: 'error', text: 'Veuillez sélectionner une sauvegarde à restaurer ou télécharger un fichier JSON' });
       return;
     }
 
@@ -151,23 +166,45 @@ const DatabaseManagement: React.FC = () => {
 
     try {
       const token = localStorage.getItem('token');
+      let requestBody: any = {};
+      
+      if (jsonFile) {
+        // Handle JSON file upload
+        const fileContent = await jsonFile.text();
+        const jsonData = JSON.parse(fileContent);
+        requestBody = { backupData: jsonData };
+      } else {
+        // Handle selected backup file
+        requestBody = { backupFile: selectedBackup };
+      }
+      
       const response = await fetch('/api/dashboard/database/restore', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ backupFile: selectedBackup })
+        body: JSON.stringify(requestBody)
       });
 
       const data: BackupResponse = await response.json();
 
       if (data.success) {
+        const restored = data.data?.restored;
+        let successMessage = 'Base de données restaurée avec succès.';
+        
+        if (restored?.counts) {
+          const counts = restored.counts;
+          successMessage += ` Restauré: ${counts.users} utilisateurs, ${counts.drivers} chauffeurs, ${counts.vehicles} véhicules, ${counts.bookings} réservations, ${counts.payments} paiements, ${counts.services} services.`;
+        }
+        
         setMessage({ 
           type: 'success', 
-          text: 'Base de données restaurée avec succès. Veuillez actualiser la page.' 
+          text: successMessage
         });
         setSelectedBackup('');
+        setJsonFile(null);
+        setShowJsonUpload(false);
       } else {
         setMessage({ type: 'error', text: data.error?.message || data.message || 'Erreur lors de la restauration' });
       }
@@ -176,6 +213,17 @@ const DatabaseManagement: React.FC = () => {
       setMessage({ type: 'error', text: 'Erreur de connexion lors de la restauration' });
     } finally {
       setIsRestoring(false);
+    }
+  };
+  
+  const handleJsonFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type === 'application/json') {
+      setJsonFile(file);
+      setSelectedBackup(''); // Clear selected backup when JSON file is chosen
+      setMessage({ type: 'info', text: `Fichier JSON sélectionné: ${file.name}` });
+    } else {
+      setMessage({ type: 'error', text: 'Veuillez sélectionner un fichier JSON valide' });
     }
   };
 
@@ -272,7 +320,7 @@ const DatabaseManagement: React.FC = () => {
 
           <button
             onClick={() => setShowRestoreConfirm(true)}
-            disabled={!selectedBackup || isBackingUp || isRestoring}
+            disabled={(!selectedBackup && !jsonFile) || isBackingUp || isRestoring}
             className="flex items-center justify-center px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {isRestoring ? (
@@ -284,6 +332,15 @@ const DatabaseManagement: React.FC = () => {
           </button>
 
           <button
+            onClick={() => setShowJsonUpload(!showJsonUpload)}
+            disabled={isBackingUp || isRestoring}
+            className="flex items-center justify-center px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <FileText className="h-5 w-5 mr-2" />
+            Télécharger JSON
+          </button>
+
+          <button
             onClick={fetchBackups}
             disabled={isLoading || isBackingUp || isRestoring}
             className="flex items-center justify-center px-4 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -292,6 +349,85 @@ const DatabaseManagement: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* JSON Upload Section */}
+      {showJsonUpload && (
+        <div className="bg-white shadow rounded-lg">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-900">Restaurer depuis un fichier JSON</h2>
+            <p className="text-sm text-gray-600 mt-1">
+              Téléchargez un fichier de sauvegarde JSON pour restaurer votre base de données
+            </p>
+          </div>
+          
+          <div className="p-6">
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+              <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              
+              {jsonFile ? (
+                <div className="space-y-4">
+                  <div className="bg-green-50 border border-green-200 rounded-md p-4">
+                    <div className="flex items-center">
+                      <CheckCircle className="h-5 w-5 text-green-400" />
+                      <div className="ml-3">
+                        <p className="text-sm font-medium text-green-800">
+                          Fichier sélectionné: {jsonFile.name}
+                        </p>
+                        <p className="text-sm text-green-700">
+                          Taille: {(jsonFile.size / 1024).toFixed(2)} KB
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex space-x-3">
+                    <button
+                      onClick={() => {
+                        setJsonFile(null);
+                        setMessage(null);
+                      }}
+                      className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      onClick={() => setShowRestoreConfirm(true)}
+                      className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    >
+                      Restaurer ce fichier
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-gray-600 mb-4">Sélectionnez un fichier JSON de sauvegarde</p>
+                  <input
+                    type="file"
+                    accept=".json,application/json"
+                    onChange={handleJsonFileChange}
+                    className="hidden"
+                    id="json-upload"
+                  />
+                  <label
+                    htmlFor="json-upload"
+                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer transition-colors"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Choisir un fichier JSON
+                  </label>
+                </div>
+              )}
+            </div>
+            
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded">
+              <p className="text-sm text-blue-800">
+                <strong>ℹ️ Information :</strong> La restauration JSON remplacera TOUTES les données actuelles de la base de données. 
+                Assurez-vous d'avoir une sauvegarde récente avant de procéder.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Backups List */}
       <div className="bg-white shadow rounded-lg">
@@ -386,14 +522,23 @@ const DatabaseManagement: React.FC = () => {
             
             <div className="mb-6">
               <p className="text-gray-700 mb-2">
-                Êtes-vous sûr de vouloir restaurer la base de données avec la sauvegarde :
+                {jsonFile 
+                  ? 'Êtes-vous sûr de vouloir restaurer la base de données avec le fichier JSON :'
+                  : 'Êtes-vous sûr de vouloir restaurer la base de données avec la sauvegarde :'
+                }
               </p>
               <p className="font-medium text-gray-900 bg-gray-100 p-2 rounded">
-                {selectedBackup}
+                {jsonFile ? jsonFile.name : selectedBackup}
               </p>
+              {jsonFile && (
+                <p className="text-sm text-gray-600 mt-2">
+                  Taille: {(jsonFile.size / 1024).toFixed(2)} KB
+                </p>
+              )}
               <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded">
                 <p className="text-sm text-orange-800">
                   <strong>⚠️ Attention :</strong> Cette action remplacera TOUTES les données actuelles de la base de données. Cette opération est irréversible.
+                  {jsonFile && ' Le fichier JSON sera analysé et toutes les tables seront recréées avec les données du fichier.'}
                 </p>
               </div>
             </div>
