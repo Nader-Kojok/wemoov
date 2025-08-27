@@ -13,6 +13,8 @@
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "create-admin": "node scripts/create-admin.js",
+    "backup": "node scripts/backup-database.js",
+    "restore": "node scripts/restore-database.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [

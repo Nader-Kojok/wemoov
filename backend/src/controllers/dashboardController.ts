@@ -2,6 +2,14 @@ import { Request, Response } from 'express';
 import { prisma } from '../utils/database.js';
 import { ApiResponse } from '../types/index.js';
 import { cache, CACHE_KEYS, CACHE_TTL } from '../utils/cache.js';
+import { execSync } from 'child_process';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Get __dirname equivalent in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Statistiques générales du dashboard
 export const getDashboardStats = async (req: Request, res: Response) => {
@@ -1831,6 +1839,296 @@ export const deleteUser = async (req: Request, res: Response) => {
       error: {
         message: 'Erreur lors de la suppression de l\'utilisateur',
         code: 'USER_DELETE_ERROR'
+      }
+    };
+    res.status(500).json(response);
+  }
+};
+
+// Database Management Functions
+
+export const createDatabaseBackup = async (req: Request, res: Response) => {
+  try {
+    console.log('🔄 Starting database backup from dashboard...');
+    
+    // Get the direct database URL
+    const directDbUrl = process.env.DIRECT_DATABASE_URL;
+    
+    if (!directDbUrl) {
+      const response: ApiResponse = {
+        success: false,
+        error: {
+          message: 'DIRECT_DATABASE_URL not configured',
+          code: 'DATABASE_CONFIG_ERROR'
+        }
+      };
+      return res.status(500).json(response);
+    }
+    
+    // Create backups directory if it doesn't exist
+    const backupsDir = path.join(__dirname, '..', '..', 'backups');
+    if (!fs.existsSync(backupsDir)) {
+      fs.mkdirSync(backupsDir, { recursive: true });
+    }
+    
+    // Generate timestamp for backup file
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0] + '_' + 
+                     new Date().toISOString().replace(/[:.]/g, '-').split('T')[1].split('.')[0];
+    const backupFile = `wemoov-backup-${timestamp}.bak`;
+    const backupPath = path.join(backupsDir, backupFile);
+    
+    // Add PostgreSQL to PATH for this process
+    process.env.PATH = `/opt/homebrew/opt/postgresql@17/bin:${process.env.PATH}`;
+    
+    // Use pg_dump with custom format for better compression and restore options
+    const command = `pg_dump -Fc -v -d "${directDbUrl}" -f "${backupPath}"`;
+    
+    execSync(command, {
+      stdio: 'pipe',
+      maxBuffer: 1024 * 1024 * 100 // 100MB buffer for large databases
+    });
+    
+    // Check if backup file was created and get its size
+    if (fs.existsSync(backupPath)) {
+      const stats = fs.statSync(backupPath);
+      const fileSizeInMB = (stats.size / (1024 * 1024)).toFixed(2);
+      
+      console.log('✅ Backup completed successfully from dashboard');
+      
+      const response: ApiResponse = {
+        success: true,
+        data: {
+          message: 'Sauvegarde créée avec succès',
+          backup: {
+            filename: backupFile,
+            size: fileSizeInMB,
+            path: backupPath,
+            created: new Date().toLocaleString('fr-FR')
+          }
+        }
+      };
+      res.json(response);
+    } else {
+      const response: ApiResponse = {
+        success: false,
+        error: {
+          message: 'Le fichier de sauvegarde n\'a pas été créé',
+          code: 'BACKUP_FILE_ERROR'
+        }
+      };
+      res.status(500).json(response);
+    }
+    
+  } catch (error: any) {
+    console.error('❌ Backup failed from dashboard:', error.message);
+    const response: ApiResponse = {
+      success: false,
+      error: {
+        message: `Erreur lors de la sauvegarde: ${error.message}`,
+        code: 'BACKUP_ERROR'
+      }
+    };
+    res.status(500).json(response);
+  }
+};
+
+export const restoreDatabase = async (req: Request, res: Response) => {
+  try {
+    const { backupFile } = req.body;
+    
+    if (!backupFile) {
+      const response: ApiResponse = {
+        success: false,
+        error: {
+          message: 'Nom du fichier de sauvegarde requis',
+          code: 'BACKUP_FILE_REQUIRED'
+        }
+      };
+      return res.status(400).json(response);
+    }
+    
+    console.log('🔄 Starting database restore from dashboard...');
+    
+    // Get the direct database URL
+    const directDbUrl = process.env.DIRECT_DATABASE_URL;
+    
+    if (!directDbUrl) {
+      const response: ApiResponse = {
+        success: false,
+        error: {
+          message: 'DIRECT_DATABASE_URL not configured',
+          code: 'DATABASE_CONFIG_ERROR'
+        }
+      };
+      return res.status(500).json(response);
+    }
+    
+    // Check if backup file exists
+    const backupsDir = path.join(__dirname, '..', '..', 'backups');
+    const backupPath = path.join(backupsDir, backupFile);
+    
+    if (!fs.existsSync(backupPath)) {
+      const response: ApiResponse = {
+        success: false,
+        error: {
+          message: 'Fichier de sauvegarde non trouvé',
+          code: 'BACKUP_FILE_NOT_FOUND'
+        }
+      };
+      return res.status(404).json(response);
+    }
+    
+    // Add PostgreSQL to PATH for this process
+    process.env.PATH = `/opt/homebrew/opt/postgresql@17/bin:${process.env.PATH}`;
+    
+    // Restore the database
+    const command = `pg_restore --clean --if-exists -v -d "${directDbUrl}" "${backupPath}"`;
+    
+    execSync(command, {
+      stdio: 'pipe',
+      maxBuffer: 1024 * 1024 * 100 // 100MB buffer
+    });
+    
+    console.log('✅ Database restored successfully from dashboard');
+    
+    const response: ApiResponse = {
+      success: true,
+      data: {
+        message: 'Base de données restaurée avec succès',
+        restored: {
+          filename: backupFile,
+          restoredAt: new Date().toLocaleString('fr-FR')
+        }
+      }
+    };
+    res.json(response);
+    
+  } catch (error: any) {
+    console.error('❌ Restore failed from dashboard:', error.message);
+    const response: ApiResponse = {
+      success: false,
+      error: {
+        message: `Erreur lors de la restauration: ${error.message}`,
+        code: 'RESTORE_ERROR'
+      }
+    };
+    res.status(500).json(response);
+  }
+};
+
+export const getBackupsList = async (req: Request, res: Response) => {
+  try {
+    const backupsDir = path.join(__dirname, '..', '..', 'backups');
+    
+    if (!fs.existsSync(backupsDir)) {
+      const response: ApiResponse = {
+        success: true,
+        data: {
+          backups: [],
+          message: 'Aucune sauvegarde disponible'
+        }
+      };
+      return res.json(response);
+    }
+    
+    const backupFiles = fs.readdirSync(backupsDir)
+      .filter(file => file.startsWith('wemoov-backup-') && file.endsWith('.bak'))
+      .map(file => {
+        const filePath = path.join(backupsDir, file);
+        const stats = fs.statSync(filePath);
+        return {
+          name: file,
+          size: (stats.size / (1024 * 1024)).toFixed(2), // Size in MB
+          created: stats.birthtime.toLocaleString('fr-FR'),
+          path: filePath
+        };
+      })
+      .sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime()); // Sort by newest first
+    
+    const response: ApiResponse = {
+      success: true,
+      data: {
+        backups: backupFiles,
+        count: backupFiles.length
+      }
+    };
+    res.json(response);
+    
+  } catch (error: any) {
+    console.error('❌ Error listing backups:', error.message);
+    const response: ApiResponse = {
+      success: false,
+      error: {
+        message: `Erreur lors de la récupération des sauvegardes: ${error.message}`,
+        code: 'BACKUPS_LIST_ERROR'
+      }
+    };
+    res.status(500).json(response);
+  }
+};
+
+export const deleteBackup = async (req: Request, res: Response) => {
+  try {
+    const { filename } = req.params;
+    
+    if (!filename) {
+      const response: ApiResponse = {
+        success: false,
+        error: {
+          message: 'Nom du fichier requis',
+          code: 'FILENAME_REQUIRED'
+        }
+      };
+      return res.status(400).json(response);
+    }
+    
+    // Security check: ensure filename is a valid backup file
+    if (!filename.startsWith('wemoov-backup-') || !filename.endsWith('.bak')) {
+      const response: ApiResponse = {
+        success: false,
+        error: {
+          message: 'Nom de fichier invalide',
+          code: 'INVALID_FILENAME'
+        }
+      };
+      return res.status(400).json(response);
+    }
+    
+    const backupsDir = path.join(__dirname, '..', '..', 'backups');
+    const filePath = path.join(backupsDir, filename);
+    
+    if (!fs.existsSync(filePath)) {
+      const response: ApiResponse = {
+        success: false,
+        error: {
+          message: 'Fichier de sauvegarde non trouvé',
+          code: 'BACKUP_FILE_NOT_FOUND'
+        }
+      };
+      return res.status(404).json(response);
+    }
+    
+    // Delete the file
+    fs.unlinkSync(filePath);
+    
+    console.log(`✅ Backup file deleted: ${filename}`);
+    
+    const response: ApiResponse = {
+      success: true,
+      data: {
+        message: 'Sauvegarde supprimée avec succès',
+        deletedFile: filename
+      }
+    };
+    res.json(response);
+    
+  } catch (error: any) {
+    console.error('❌ Error deleting backup:', error.message);
+    const response: ApiResponse = {
+      success: false,
+      error: {
+        message: `Erreur lors de la suppression: ${error.message}`,
+        code: 'DELETE_BACKUP_ERROR'
       }
     };
     res.status(500).json(response);

@@ -22,7 +22,11 @@ import {
   createVehicle,
   updateVehicle,
   deleteVehicle,
-  getRevenueStats
+  getRevenueStats,
+  createDatabaseBackup,
+  restoreDatabase,
+  getBackupsList,
+  deleteBackup
 } from '../controllers/dashboardController.js';
 import { protect, authorize } from '../middleware/auth.js';
 
@@ -66,5 +70,11 @@ router.delete('/vehicles/:id', deleteVehicle);
 
 // Statistiques des revenus
 router.get('/revenue', getRevenueStats);
+
+// Gestion de la base de données
+router.post('/database/backup', createDatabaseBackup);
+router.post('/database/restore', restoreDatabase);
+router.get('/database/backups', getBackupsList);
+router.delete('/database/backups/:filename', deleteBackup);
 
 export default router;

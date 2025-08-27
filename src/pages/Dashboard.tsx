@@ -5,6 +5,7 @@ import DashboardOverview from '../components/Dashboard/DashboardOverview';
 import UsersManagement from '../components/Dashboard/UsersManagement';
 import BookingsManagement from '../components/Dashboard/BookingsManagement';
 import DriversVehiclesManagement from '../components/Dashboard/DriversVehiclesManagement';
+import DatabaseManagement from '../components/Dashboard/DatabaseManagement';
 
 // Composant temporaire pour les pages non encore implémentées
 const ComingSoon: React.FC<{ title: string }> = ({ title }) => (
@@ -29,6 +30,7 @@ const Dashboard: React.FC = () => {
         <Route path="drivers" element={<DriversVehiclesManagement />} />
         <Route path="payments" element={<ComingSoon title="Gestion des Paiements" />} />
         <Route path="analytics" element={<ComingSoon title="Statistiques Avancées" />} />
+        <Route path="database" element={<DatabaseManagement />} />
         <Route path="settings" element={<ComingSoon title="Paramètres" />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Route>

@@ -8,6 +8,7 @@ import {
   CreditCard,
   BarChart3,
   Settings,
+  Database,
   LogOut,
   Menu,
   X
@@ -50,6 +51,11 @@ const sidebarItems: SidebarItem[] = [
     name: 'Statistiques',
     href: '/dashboard/analytics',
     icon: BarChart3
+  },
+  {
+    name: 'Base de Données',
+    href: '/dashboard/database',
+    icon: Database
   },
   {
     name: 'Paramètres',
