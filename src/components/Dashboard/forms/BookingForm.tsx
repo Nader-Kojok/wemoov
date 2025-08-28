@@ -101,11 +101,14 @@ const BookingForm: React.FC<BookingFormProps> = ({
       newErrors.pickupLocation = 'Le lieu de prise en charge doit contenir au moins 5 caractères';
     }
 
-    // Validation de la destination
-    if (!formData.destination.trim()) {
-      newErrors.destination = 'La destination est requise';
-    } else if (formData.destination.length < 5) {
-      newErrors.destination = 'La destination doit contenir au moins 5 caractères';
+    // Validation de la destination (optionnelle pour les services HOURLY)
+    const requiresDestination = formData.serviceType !== 'HOURLY';
+    if (requiresDestination) {
+      if (!formData.destination.trim()) {
+        newErrors.destination = 'La destination est requise';
+      } else if (formData.destination.length < 5) {
+        newErrors.destination = 'La destination doit contenir au moins 5 caractères';
+      }
     }
 
     // Validation de la date
@@ -254,19 +257,22 @@ const BookingForm: React.FC<BookingFormProps> = ({
         
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Destination *
+            Destination {formData.serviceType !== 'HOURLY' ? '*' : '(optionnel)'}
           </label>
           <input
             type="text"
-            required
+            required={formData.serviceType !== 'HOURLY'}
             value={formData.destination}
             onChange={(e) => handleInputChange('destination', e.target.value)}
             className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400 ${
               errors.destination ? 'border-red-300' : 'border-gray-300'
             }`}
-            placeholder="Adresse de destination"
+            placeholder={formData.serviceType === 'HOURLY' ? 'Le chauffeur gère les déplacements' : 'Adresse de destination'}
             disabled={isLoading || isSubmitting}
           />
+          {formData.serviceType === 'HOURLY' && (
+            <p className="mt-1 text-xs text-blue-600">Pour la location à l'heure, le chauffeur vous accompagne selon vos besoins</p>
+          )}
           {errors.destination && (
             <p className="mt-1 text-sm text-red-600">{errors.destination}</p>
           )}

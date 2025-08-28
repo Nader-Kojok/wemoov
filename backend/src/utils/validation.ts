@@ -98,8 +98,11 @@ export const validateBookingData = (data: CreateBookingRequest): string[] => {
     errors.push('Lieu de prise en charge requis (minimum 3 caractères)');
   }
 
-  if (!data.destination || data.destination.trim().length < 3) {
-    errors.push('Destination requise (minimum 3 caractères)');
+  // Destination is optional for HOURLY services
+  if (data.serviceType !== 'HOURLY') {
+    if (!data.destination || data.destination.trim().length < 3) {
+      errors.push('Destination requise (minimum 3 caractères)');
+    }
   }
 
   if (!data.scheduledDate) {

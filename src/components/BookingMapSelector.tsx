@@ -4,7 +4,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { MapPin, Navigation, Target, ArrowUpDown } from 'lucide-react';
+import { MapPin, Navigation, Target } from 'lucide-react';
 
 // Set Mapbox access token
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
@@ -16,6 +16,7 @@ interface BookingMapSelectorProps {
   onDestinationChange?: (location: string) => void;
   height?: string;
   className?: string;
+  showDestination?: boolean;
 }
 
 const BookingMapSelector: React.FC<BookingMapSelectorProps> = ({
@@ -23,8 +24,9 @@ const BookingMapSelector: React.FC<BookingMapSelectorProps> = ({
   destination = '',
   onPickupChange,
   onDestinationChange,
-  height = '400px',
-  className = ''
+  height = '500px',
+  className = '',
+  showDestination = true
 }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -57,6 +59,13 @@ const BookingMapSelector: React.FC<BookingMapSelectorProps> = ({
     // Add click handler for location selection
     map.current.on('click', handleMapClick);
 
+    // Ensure map resizes to fill container
+    map.current.on('load', () => {
+      if (map.current) {
+        map.current.resize();
+      }
+    });
+
     return () => {
       if (map.current) {
         map.current.remove();
@@ -64,6 +73,18 @@ const BookingMapSelector: React.FC<BookingMapSelectorProps> = ({
       }
     };
   }, []);
+
+  // Resize map when height changes
+  useEffect(() => {
+    if (map.current) {
+      // Use setTimeout to ensure DOM has updated
+      setTimeout(() => {
+        if (map.current) {
+          map.current.resize();
+        }
+      }, 100);
+    }
+  }, [height]);
 
   // Update markers when locations change
   useEffect(() => {
@@ -412,26 +433,13 @@ const BookingMapSelector: React.FC<BookingMapSelectorProps> = ({
     }
   };
 
-  // Swap pickup and destination
-  const swapLocations = () => {
-    const tempPickup = localPickup;
-    const tempDestination = localDestination;
-    
-    setLocalPickup(tempDestination);
-    setLocalDestination(tempPickup);
-    onPickupChange?.(tempDestination);
-    onDestinationChange?.(tempPickup);
-    
-    // Update markers
-    if (tempDestination) updatePickupMarker(tempDestination);
-    if (tempPickup) updateDestinationMarker(tempPickup);
-  };
+
 
   return (
-    <div className={`space-y-4 ${className}`}>
+    <div className={`space-y-3 ${className}`}>
 
       {/* Location Inputs */}
-      <div className="grid grid-cols-1 gap-3">
+      <div className="grid grid-cols-1 gap-2">
         {/* Pickup Location */}
         <div className="space-y-2">
           <Label htmlFor="pickup">Point de départ</Label>
@@ -492,88 +500,74 @@ const BookingMapSelector: React.FC<BookingMapSelectorProps> = ({
           </div>
         </div>
 
-        {/* Swap Button */}
-        <div className="flex justify-center">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={swapLocations}
-            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-            disabled={!localPickup && !localDestination}
-            title="Échanger départ et destination"
-          >
-            <ArrowUpDown className="h-4 w-4 mr-2" />
-            Échanger
-          </Button>
-        </div>
-
-        {/* Destination */}
-        <div className="space-y-2">
-          <Label htmlFor="destination">Destination</Label>
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Target className="absolute left-3 top-3 h-4 w-4 text-red-600" />
-              <Input
-                id="destination"
-                placeholder="Tapez pour rechercher..."
-                value={destinationSearchQuery || localDestination}
-                onChange={handleDestinationSearchChange}
-                onFocus={() => {
-                  setDestinationSearchQuery(localDestination);
-                  if (localDestination.length >= 2) {
-                    setShowDestinationResults(true);
-                  }
-                }}
-                onBlur={() => {
-                  setTimeout(() => setShowDestinationResults(false), 200);
-                }}
-                className="pl-10 pr-4 border-red-200 focus:border-red-500 focus:ring-red-500"
-              />
-              {/* Destination Search Results */}
-              {showDestinationResults && destinationSearchResults.length > 0 && (
-                <div className="absolute top-full mt-1 w-full bg-white rounded-md shadow-lg border border-gray-200 max-h-60 overflow-y-auto z-20">
-                  {destinationSearchResults.map((result, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleDestinationResultSelect(result)}
-                      className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 focus:outline-none focus:bg-gray-50"
-                    >
-                      <div className="flex items-start space-x-3">
-                        <Target className="h-4 w-4 text-gray-400 mt-1 flex-shrink-0" />
-                        <div>
-                          <div className="font-medium text-gray-900 text-sm">
-                            {result.text}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {result.place_name}
+        {/* Destination - Only show if showDestination is true */}
+        {showDestination && (
+          <div className="space-y-2">
+            <Label htmlFor="destination">Destination</Label>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Target className="absolute left-3 top-3 h-4 w-4 text-red-600" />
+                <Input
+                  id="destination"
+                  placeholder="Tapez pour rechercher..."
+                  value={destinationSearchQuery || localDestination}
+                  onChange={handleDestinationSearchChange}
+                  onFocus={() => {
+                    setDestinationSearchQuery(localDestination);
+                    if (localDestination.length >= 2) {
+                      setShowDestinationResults(true);
+                    }
+                  }}
+                  onBlur={() => {
+                    setTimeout(() => setShowDestinationResults(false), 200);
+                  }}
+                  className="pl-10 pr-4 border-red-200 focus:border-red-500 focus:ring-red-500"
+                />
+                {/* Destination Search Results */}
+                {showDestinationResults && destinationSearchResults.length > 0 && (
+                  <div className="absolute top-full mt-1 w-full bg-white rounded-md shadow-lg border border-gray-200 max-h-60 overflow-y-auto z-20">
+                    {destinationSearchResults.map((result, index) => (
+                      <button
+                        key={index}
+                        onClick={() => handleDestinationResultSelect(result)}
+                        className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 focus:outline-none focus:bg-gray-50"
+                      >
+                        <div className="flex items-start space-x-3">
+                          <Target className="h-4 w-4 text-gray-400 mt-1 flex-shrink-0" />
+                          <div>
+                            <div className="font-medium text-gray-900 text-sm">
+                              {result.text}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {result.place_name}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => getCurrentLocation('destination')}
+                className="shrink-0 border-red-200 text-red-600 hover:bg-red-50"
+                title="Utiliser ma position actuelle"
+              >
+                <Navigation className="h-4 w-4" />
+              </Button>
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              onClick={() => getCurrentLocation('destination')}
-              className="shrink-0 border-red-200 text-red-600 hover:bg-red-50"
-              title="Utiliser ma position actuelle"
-            >
-              <Navigation className="h-4 w-4" />
-            </Button>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Map Container */}
       <div 
         ref={mapContainer} 
-        className="w-full rounded-lg overflow-hidden border border-gray-200"
-        style={{ height }}
+        className="w-full rounded-lg overflow-hidden border border-gray-200 flex-1"
+        style={{ height, minHeight: height }}
       />
 
 

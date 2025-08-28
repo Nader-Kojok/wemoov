@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent } from "@/components/ui/card"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+// Removed Tabs import as we're using service selection cards instead
 import { MapPin, Calendar, Clock, Users, Phone, Mail, User, Target, Car, Plane, Timer } from "lucide-react"
 import BookingMapSelector from './BookingMapSelector'
 
@@ -29,6 +29,9 @@ interface BookingData {
   specialRequests: string
   rentalDuration: string
   rentalType: string
+  withDriver: boolean
+  hourlyDuration: string
+  dailyDuration: string
 }
 
 const VEHICLE_TYPES = [
@@ -44,9 +47,33 @@ const RENTAL_TYPES = [
   { value: "weekly", label: "Location à la semaine", price: "280 000 FCFA/semaine" }
 ]
 
+const SERVICE_TYPES = [
+  {
+    id: "course",
+    title: "Commander une course",
+    description: "Transport ponctuel d'un point A à un point B",
+    icon: Car,
+    color: "from-blue-500 to-blue-600"
+  },
+  {
+    id: "hourly",
+    title: "Location à l'heure",
+    description: "Réservez un chauffeur pour plusieurs heures",
+    icon: Clock,
+    color: "from-green-500 to-green-600"
+  },
+  {
+    id: "rental",
+    title: "Location longue durée",
+    description: "Location à la journée, semaine ou plus",
+    icon: Timer,
+    color: "from-purple-500 to-purple-600"
+  }
+]
+
 export const BookingModal: React.FC<BookingModalProps> = ({ open, onOpenChange }) => {
-  const [activeTab, setActiveTab] = React.useState("course")
-  const [currentStep, setCurrentStep] = React.useState(1)
+  const [selectedService, setSelectedService] = React.useState<string | null>(null)
+  const [currentStep, setCurrentStep] = React.useState(0) // Start at 0 for service selection
   const [useMapView, setUseMapView] = React.useState(true)
   const [bookingData, setBookingData] = React.useState<BookingData>({
     serviceType: "",
@@ -62,31 +89,47 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, onOpenChange }
     email: "",
     specialRequests: "",
     rentalDuration: "",
-    rentalType: ""
+    rentalType: "",
+    withDriver: true,
+    hourlyDuration: "1",
+    dailyDuration: "1"
   })
 
-  const getStepsForTab = (tab: string) => {
-    switch (tab) {
+  const getStepsForService = (serviceId: string | null) => {
+    if (!serviceId) return [{ id: 0, title: "Service", component: "service" }]
+    
+    const baseSteps = [{ id: 0, title: "Service", component: "service" }]
+    
+    switch (serviceId) {
       case "course":
         return [
+          ...baseSteps,
           { id: 1, title: "Itinéraire", component: "location" },
           { id: 2, title: "Détails", component: "details" },
           { id: 3, title: "Contact", component: "contact" }
         ]
       case "hourly":
+        return [
+          ...baseSteps,
+          { id: 1, title: "Itinéraire", component: "location" },
+          { id: 2, title: "Durée", component: "hourly" },
+          { id: 3, title: "Détails", component: "details" },
+          { id: 4, title: "Contact", component: "contact" }
+        ]
       case "rental":
         return [
+          ...baseSteps,
           { id: 1, title: "Itinéraire", component: "location" },
           { id: 2, title: "Options", component: "rental" },
           { id: 3, title: "Détails", component: "details" },
           { id: 4, title: "Contact", component: "contact" }
         ]
       default:
-        return []
+        return baseSteps
     }
   }
 
-  const steps = getStepsForTab(activeTab)
+  const steps = getStepsForService(selectedService)
   const maxSteps = steps.length
 
   const nextStep = () => {
@@ -96,49 +139,131 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, onOpenChange }
   }
 
   const prevStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1)
+    if (currentStep > 0) {
+      if (currentStep === 1) {
+        // Going back to service selection
+        setSelectedService(null)
+        setCurrentStep(0)
+      } else {
+        setCurrentStep(currentStep - 1)
+      }
     }
   }
 
-  const handleTabChange = (newTab: string) => {
-     setActiveTab(newTab)
-     setCurrentStep(1)
-   }
+  const handleServiceSelection = (serviceId: string) => {
+    setSelectedService(serviceId)
+    const updatedData: Partial<BookingData> = { serviceType: serviceId }
+    
+    // Auto-set rentalType for hourly service
+    if (serviceId === "hourly") {
+      updatedData.rentalType = "hourly"
+    }
+    
+    setBookingData(prev => ({ ...prev, ...updatedData }))
+    setCurrentStep(1)
+  }
+
+  const renderServiceSelection = () => (
+    <div className="space-y-4">
+      <div className="text-center mb-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">Quel service souhaitez-vous ?</h3>
+        <p className="text-sm text-gray-600">Choisissez le type de transport qui correspond à vos besoins</p>
+      </div>
+      <div className="space-y-3">
+        {SERVICE_TYPES.map((service) => {
+          const IconComponent = service.icon
+          return (
+            <Card 
+              key={service.id}
+              className="cursor-pointer transition-all duration-200 hover:shadow-md border-2 hover:border-blue-200"
+              onClick={() => handleServiceSelection(service.id)}
+            >
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-4">
+                  <div className={`w-12 h-12 rounded-full bg-gradient-to-r ${service.color} flex items-center justify-center flex-shrink-0`}>
+                    <IconComponent className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-gray-900 mb-1">{service.title}</h4>
+                    <p className="text-sm text-gray-600">{service.description}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
+      </div>
+    </div>
+  )
  
-   const renderCurrentStepContent = () => {
-     const currentStepInfo = steps[currentStep - 1]
-     if (!currentStepInfo) return null
+  const renderCurrentStepContent = () => {
+    const currentStepInfo = steps[currentStep]
+    if (!currentStepInfo) return null
  
-     switch (currentStepInfo.component) {
-       case "location":
-         return renderLocationAndDateTime()
-       case "rental":
-         return renderRentalOptions()
-       case "details":
-         return renderPassengersAndVehicle()
-       case "contact":
-         return renderContactForm()
-       default:
-         return null
-     }
-   }
+    switch (currentStepInfo.component) {
+      case "service":
+        return renderServiceSelection()
+      case "location":
+        return renderLocationAndDateTime()
+      case "hourly":
+        return renderHourlyOptions()
+      case "rental":
+        return renderRentalOptions()
+      case "details":
+        return renderPassengersAndVehicle()
+      case "contact":
+        return renderContactForm()
+      default:
+        return null
+    }
+  }
  
-   const updateBookingData = (field: keyof BookingData, value: string) => {
+   const updateBookingData = (field: keyof BookingData, value: string | boolean) => {
      setBookingData(prev => ({ ...prev, [field]: value }))
    }
 
   const handleSubmit = async () => {
     try {
-      const requiredFields = {
+      // Define required fields based on service type
+      const requiredFields: Record<string, string> = {
         pickupLocation: bookingData.pickupLocation,
-        destination: activeTab === "course" ? bookingData.destination : "",
         date: bookingData.date,
         time: bookingData.time,
         passengers: bookingData.passengers,
         firstName: bookingData.firstName,
         lastName: bookingData.lastName,
         phone: bookingData.phone
+      }
+
+      // Only require destination for "course" service (point A to point B)
+      if (selectedService === "course") {
+        requiredFields.destination = bookingData.destination
+      }
+
+      // Validate rental-specific fields
+      if (selectedService === "hourly" || selectedService === "rental") {
+        if (!bookingData.rentalType) {
+          alert('Veuillez sélectionner un type de location')
+          return
+        }
+        
+        if (bookingData.rentalType === 'hourly') {
+          const hours = parseInt(bookingData.hourlyDuration)
+          if (!hours || hours < 1 || hours > 24) {
+            alert('Veuillez saisir un nombre d\'heures valide (1-24)')
+            return
+          }
+        }
+        
+        if (bookingData.rentalType === 'daily' || bookingData.rentalType === 'weekly') {
+          const duration = parseInt(bookingData.dailyDuration)
+          const maxValue = bookingData.rentalType === 'daily' ? 365 : 52
+          const unit = bookingData.rentalType === 'daily' ? 'jours' : 'semaines'
+          if (!duration || duration < 1 || duration > maxValue) {
+            alert(`Veuillez saisir un nombre de ${unit} valide (1-${maxValue})`)
+            return
+          }
+        }
       }
 
       const missingFields = Object.entries(requiredFields)
@@ -150,8 +275,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, onOpenChange }
         return
       }
 
-      let serviceType = activeTab
-      if (activeTab === "course" && bookingData.destination.toLowerCase().includes("aéroport")) {
+      let serviceType = selectedService || bookingData.serviceType
+      if (selectedService === "course" && bookingData.destination.toLowerCase().includes("aéroport")) {
         serviceType = "airport"
       }
 
@@ -168,8 +293,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, onOpenChange }
         lastName: bookingData.lastName,
         phone: bookingData.phone,
         email: bookingData.email,
-        rentalDuration: bookingData.rentalDuration,
-        rentalType: bookingData.rentalType
+        rentalDuration: bookingData.rentalType === 'hourly' ? bookingData.hourlyDuration : bookingData.dailyDuration,
+        rentalType: bookingData.rentalType,
+        withDriver: bookingData.withDriver,
+        hourlyDuration: bookingData.hourlyDuration,
+        dailyDuration: bookingData.dailyDuration
       }
 
       const response = await fetch('/api/public/bookings', {
@@ -198,7 +326,10 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, onOpenChange }
           email: '',
           specialRequests: '',
           rentalDuration: '',
-          rentalType: ''
+          rentalType: '',
+          withDriver: true,
+          hourlyDuration: '1',
+          dailyDuration: '1'
         })
         onOpenChange(false)
       } else {
@@ -264,11 +395,36 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, onOpenChange }
           <div className="space-y-3">
             <BookingMapSelector
               pickupLocation={bookingData.pickupLocation}
-              destination={bookingData.destination}
+              destination={selectedService === "course" ? bookingData.destination : ""}
               onPickupChange={(location) => updateBookingData('pickupLocation', location)}
-              onDestinationChange={(location) => updateBookingData('destination', location)}
+              onDestinationChange={selectedService === "course" ? (location) => updateBookingData('destination', location) : undefined}
               height="200px"
+              showDestination={selectedService === "course"}
             />
+            {/* Show service-specific information for hourly and rental services in map view */}
+            {(selectedService === "hourly" || selectedService === "rental") && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <div className="flex items-start space-x-2">
+                  <div className="flex-shrink-0">
+                    {selectedService === "hourly" ? (
+                      <Clock className="h-4 w-4 text-blue-600 mt-0.5" />
+                    ) : (
+                      <Timer className="h-4 w-4 text-blue-600 mt-0.5" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-sm font-medium text-blue-900 mb-1">
+                      {selectedService === "hourly" ? "Location à l'heure" : "Location longue durée"}
+                    </h4>
+                    <p className="text-xs text-blue-700">
+                      {selectedService === "hourly" 
+                        ? "Le chauffeur vous accompagnera selon vos besoins. Seul le point de départ est requis."
+                        : "Véhicule avec chauffeur pour une durée prolongée. Le chauffeur gère tous les déplacements."}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           /* Manual Input View */
@@ -287,7 +443,33 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, onOpenChange }
               </div>
             </div>
 
-            {activeTab === "course" && renderDestinationInput()}
+            {/* Show destination input only for "course" service */}
+            {selectedService === "course" && renderDestinationInput()}
+            
+            {/* Show service-specific information for hourly and rental services */}
+            {(selectedService === "hourly" || selectedService === "rental") && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <div className="flex items-start space-x-2">
+                  <div className="flex-shrink-0">
+                    {selectedService === "hourly" ? (
+                      <Clock className="h-4 w-4 text-blue-600 mt-0.5" />
+                    ) : (
+                      <Timer className="h-4 w-4 text-blue-600 mt-0.5" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-sm font-medium text-blue-900 mb-1">
+                      {selectedService === "hourly" ? "Location à l'heure" : "Location longue durée"}
+                    </h4>
+                    <p className="text-xs text-blue-700">
+                      {selectedService === "hourly" 
+                        ? "Le chauffeur vous accompagnera selon vos besoins. Seul le point de départ est requis."
+                        : "Véhicule avec chauffeur pour une durée prolongée. Le chauffeur gère tous les déplacements."}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -397,6 +579,65 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, onOpenChange }
     </div>
   )
 
+  const renderHourlyOptions = () => (
+    <div className="bg-white rounded-lg border border-gray-200 p-4">
+      <div className="flex items-center space-x-2 mb-3">
+        <Clock className="h-4 w-4 text-green-600" />
+        <h3 className="font-medium text-gray-900 text-sm">Durée de location</h3>
+      </div>
+      
+      <div className="space-y-4">
+        <div className="space-y-1 p-2 bg-green-50 rounded border border-green-200">
+          <Label htmlFor="duration" className="text-xs font-medium text-green-900">Nombre d'heures</Label>
+          <div className="flex items-center space-x-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const current = parseInt(bookingData.hourlyDuration) || 1
+                if (current > 1) updateBookingData('hourlyDuration', (current - 1).toString())
+              }}
+              className="h-8 w-8 p-0 border-green-300 text-green-600 hover:bg-green-100"
+            >
+              -
+            </Button>
+            <Input
+              id="duration"
+              type="number"
+              min="1"
+              max="24"
+              value={bookingData.hourlyDuration}
+              onChange={(e) => {
+                const value = parseInt(e.target.value) || 1
+                if (value >= 1 && value <= 24) {
+                  updateBookingData('hourlyDuration', value.toString())
+                }
+              }}
+              className="h-8 text-center border-green-300 focus:border-green-500 focus:ring-green-500 bg-white text-xs w-16"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const current = parseInt(bookingData.hourlyDuration) || 1
+                if (current < 24) updateBookingData('hourlyDuration', (current + 1).toString())
+              }}
+              className="h-8 w-8 p-0 border-green-300 text-green-600 hover:bg-green-100"
+            >
+              +
+            </Button>
+            <span className="text-xs text-green-700">heure(s)</span>
+          </div>
+          <p className="text-xs text-green-700 mt-2">
+            Prix: {parseInt(bookingData.hourlyDuration) * 8000} FCFA
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+
   const renderRentalOptions = () => (
     <div className="bg-white rounded-lg border border-gray-200 p-4">
       <div className="flex items-center space-x-2 mb-3">
@@ -408,7 +649,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, onOpenChange }
         <div className="space-y-2">
           <Label className="text-xs font-medium text-gray-700">Type de location</Label>
           <div className="grid grid-cols-1 gap-2">
-            {RENTAL_TYPES.map((rental) => {
+            {RENTAL_TYPES.filter(rental => rental.value !== 'hourly').map((rental) => {
               const isSelected = bookingData.rentalType === rental.value
               return (
                 <Card 
@@ -451,19 +692,126 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, onOpenChange }
         {bookingData.rentalType === 'hourly' && (
            <div className="space-y-1 p-2 bg-purple-50 rounded border border-purple-200">
              <Label htmlFor="duration" className="text-xs font-medium text-purple-900">Durée (en heures)</Label>
-             <Select value={bookingData.rentalDuration} onValueChange={(value) => updateBookingData('rentalDuration', value)}>
-               <SelectTrigger className="h-8 border-purple-300 focus:border-purple-500 focus:ring-purple-500 bg-white text-xs">
-                 <Clock className="h-3 w-3 mr-1 text-purple-600" />
-                 <SelectValue placeholder="Sélectionnez" />
-               </SelectTrigger>
-               <SelectContent>
-                 {[1, 2, 3, 4, 5, 6, 8, 10, 12].map((hours) => (
-                   <SelectItem key={hours} value={hours.toString()}>
-                     {hours}h
-                   </SelectItem>
-                 ))}
-               </SelectContent>
-             </Select>
+             <div className="flex items-center space-x-2">
+               <Button
+                 type="button"
+                 variant="outline"
+                 size="sm"
+                 onClick={() => {
+                   const current = parseInt(bookingData.hourlyDuration) || 1
+                   if (current > 1) updateBookingData('hourlyDuration', (current - 1).toString())
+                 }}
+                 className="h-8 w-8 p-0 border-purple-300 text-purple-600 hover:bg-purple-100"
+               >
+                 -
+               </Button>
+               <Input
+                 id="duration"
+                 type="number"
+                 min="1"
+                 max="24"
+                 value={bookingData.hourlyDuration}
+                 onChange={(e) => {
+                   const value = parseInt(e.target.value) || 1
+                   if (value >= 1 && value <= 24) {
+                     updateBookingData('hourlyDuration', value.toString())
+                   }
+                 }}
+                 className="h-8 text-center border-purple-300 focus:border-purple-500 focus:ring-purple-500 bg-white text-xs w-16"
+               />
+               <Button
+                 type="button"
+                 variant="outline"
+                 size="sm"
+                 onClick={() => {
+                   const current = parseInt(bookingData.hourlyDuration) || 1
+                   if (current < 24) updateBookingData('hourlyDuration', (current + 1).toString())
+                 }}
+                 className="h-8 w-8 p-0 border-purple-300 text-purple-600 hover:bg-purple-100"
+               >
+                 +
+               </Button>
+               <span className="text-xs text-purple-700">heure(s)</span>
+             </div>
+           </div>
+         )}
+         
+         {(bookingData.rentalType === 'daily' || bookingData.rentalType === 'weekly') && (
+           <div className="space-y-3">
+             <div className="space-y-1 p-2 bg-purple-50 rounded border border-purple-200">
+               <Label htmlFor="dailyDuration" className="text-xs font-medium text-purple-900">
+                 {bookingData.rentalType === 'daily' ? 'Nombre de jours' : 'Nombre de semaines'}
+               </Label>
+               <div className="flex items-center space-x-2">
+                 <Button
+                   type="button"
+                   variant="outline"
+                   size="sm"
+                   onClick={() => {
+                     const current = parseInt(bookingData.dailyDuration) || 1
+                     if (current > 1) updateBookingData('dailyDuration', (current - 1).toString())
+                   }}
+                   className="h-8 w-8 p-0 border-purple-300 text-purple-600 hover:bg-purple-100"
+                 >
+                   -
+                 </Button>
+                 <Input
+                   id="dailyDuration"
+                   type="number"
+                   min="1"
+                   max={bookingData.rentalType === 'daily' ? "365" : "52"}
+                   value={bookingData.dailyDuration}
+                   onChange={(e) => {
+                     const value = parseInt(e.target.value) || 1
+                     const maxValue = bookingData.rentalType === 'daily' ? 365 : 52
+                     if (value >= 1 && value <= maxValue) {
+                       updateBookingData('dailyDuration', value.toString())
+                     }
+                   }}
+                   className="h-8 text-center border-purple-300 focus:border-purple-500 focus:ring-purple-500 bg-white text-xs w-16"
+                 />
+                 <Button
+                   type="button"
+                   variant="outline"
+                   size="sm"
+                   onClick={() => {
+                     const current = parseInt(bookingData.dailyDuration) || 1
+                     const maxValue = bookingData.rentalType === 'daily' ? 365 : 52
+                     if (current < maxValue) updateBookingData('dailyDuration', (current + 1).toString())
+                   }}
+                   className="h-8 w-8 p-0 border-purple-300 text-purple-600 hover:bg-purple-100"
+                 >
+                   +
+                 </Button>
+                 <span className="text-xs text-purple-700">
+                   {bookingData.rentalType === 'daily' ? 'jour(s)' : 'semaine(s)'}
+                 </span>
+               </div>
+               <p className="text-xs text-purple-700 mt-2">
+                 Prix: {parseInt(bookingData.dailyDuration) * (bookingData.rentalType === 'daily' ? 45000 : 280000)} FCFA
+               </p>
+             </div>
+             
+             <div className="space-y-2 p-2 bg-purple-50 rounded border border-purple-200">
+               <Label className="text-xs font-medium text-purple-900">Options supplémentaires</Label>
+             <div className="flex items-center space-x-2">
+               <input
+                  type="checkbox"
+                  id="withDriver"
+                  checked={bookingData.withDriver}
+                  onChange={(e) => updateBookingData('withDriver', e.target.checked)}
+                  className="rounded border-purple-300 text-purple-600 focus:ring-purple-500"
+                />
+               <Label htmlFor="withDriver" className="text-xs text-purple-900 cursor-pointer">
+                 Avec chauffeur
+               </Label>
+             </div>
+             <p className="text-xs text-purple-700">
+                {bookingData.withDriver 
+                  ? "Un chauffeur professionnel sera assigné à votre véhicule."
+                  : "Vous conduirez le véhicule vous-même."}
+              </p>
+             </div>
            </div>
          )}
       </div>
@@ -541,41 +889,27 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, onOpenChange }
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md mx-auto h-[95vh] max-h-[800px] p-0 overflow-hidden">
         <div className="flex flex-col h-full">
-          {/* Compact Header with Tabs */}
+          {/* Simplified Header */}
           <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
             <div className="px-4 pt-4 pb-2">
               <h2 className="text-lg font-semibold text-gray-900 text-center mb-3">Réserver votre transport</h2>
-              <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-                <TabsList className="grid w-full grid-cols-3 h-auto p-1 bg-gray-50">
-                  <TabsTrigger value="course" className="flex flex-col items-center py-2 px-1 text-xs data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600">
-                    <Car className="h-4 w-4 mb-1" />
-                    <span className="font-medium leading-tight">Commander</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="hourly" className="flex flex-col items-center py-2 px-1 text-xs data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600">
-                    <Clock className="h-4 w-4 mb-1" />
-                    <span className="font-medium leading-tight">Par heure</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="rental" className="flex flex-col items-center py-2 px-1 text-xs data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600">
-                    <Timer className="h-4 w-4 mb-1" />
-                    <span className="font-medium leading-tight">Location</span>
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
             </div>
             
-            {/* Step Progress */}
-            <div className="px-4 pb-3">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-gray-600">{steps[currentStep - 1]?.title}</span>
-                <span className="text-xs text-gray-500">{currentStep} / {maxSteps}</span>
+            {/* Step Progress - only show if service is selected */}
+            {selectedService && (
+              <div className="px-4 pb-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs text-gray-600">{steps[currentStep]?.title}</span>
+                  <span className="text-xs text-gray-500">{currentStep + 1} / {maxSteps}</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-1">
+                  <div 
+                    className="bg-blue-600 h-1 rounded-full transition-all duration-300" 
+                    style={{ width: `${((currentStep + 1) / maxSteps) * 100}%` }}
+                  ></div>
+                </div>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-1">
-                <div 
-                  className="bg-blue-600 h-1 rounded-full transition-all duration-300" 
-                  style={{ width: `${(currentStep / maxSteps) * 100}%` }}
-                ></div>
-              </div>
-            </div>
+            )}
           </div>
 
           {/* Content */}
@@ -588,7 +922,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, onOpenChange }
           {/* Footer with Navigation */}
           <div className="p-4 border-t bg-white shadow-lg">
             <div className="flex gap-3">
-              {currentStep > 1 && (
+              {currentStep > 0 && (
                 <Button 
                   onClick={prevStep}
                   variant="outline"
@@ -598,7 +932,10 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, onOpenChange }
                 </Button>
               )}
               
-              {currentStep < maxSteps ? (
+              {currentStep === 0 ? (
+                // Service selection step - no next button needed as selection triggers next step
+                null
+              ) : currentStep < maxSteps - 1 ? (
                 <Button 
                   onClick={nextStep}
                   className="flex-1 bg-gradient-to-r from-[#1E5EFF] to-[#4A90E2] hover:from-[#1E5EFF]/90 hover:to-[#4A90E2]/90 h-12 text-base font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
