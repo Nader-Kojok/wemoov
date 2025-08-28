@@ -17,7 +17,9 @@ interface Booking {
 interface PaymentData {
   method: 'WAVE' | 'ORANGE_MONEY' | 'CASH' | 'CARD';
   amount: number;
-  transactionId: string;
+  transactionId?: string;
+  phoneNumber?: string;
+  notes?: string;
 }
 
 interface PaymentModalProps {
@@ -38,7 +40,9 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   const [paymentData, setPaymentData] = useState<PaymentData>({
     method: 'WAVE',
     amount: booking?.totalPrice || 0,
-    transactionId: ''
+    transactionId: '',
+    phoneNumber: '',
+    notes: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { showError, showSuccess } = useNotifications();
@@ -56,7 +60,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!paymentData.transactionId.trim()) {
+    if (!paymentData.transactionId?.trim()) {
       showError('Erreur de validation', 'L\'ID de transaction est requis');
       return;
     }
@@ -76,7 +80,9 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       setPaymentData({
         method: 'WAVE',
         amount: 0,
-        transactionId: ''
+        transactionId: '',
+        phoneNumber: '',
+        notes: ''
       });
       onClose();
     } catch (error) {
@@ -93,10 +99,12 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   const handleClose = () => {
     if (!isSubmitting) {
       setPaymentData({
-        method: 'WAVE',
-        amount: booking?.totalPrice || 0,
-        transactionId: ''
-      });
+          method: 'WAVE',
+          amount: booking?.totalPrice || 0,
+          transactionId: '',
+          phoneNumber: '',
+          notes: ''
+        });
       onClose();
     }
   };
@@ -201,6 +209,29 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
             </div>
           </div>
 
+          {/* Numéro de téléphone (pour Wave et Orange Money) */}
+          {(paymentData.method === 'WAVE' || paymentData.method === 'ORANGE_MONEY') && (
+            <div>
+              <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-2">
+                Numéro de téléphone
+              </label>
+              <div className="relative">
+                <Smartphone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="tel"
+                  id="phoneNumber"
+                  value={paymentData.phoneNumber || ''}
+                  onChange={(e) => setPaymentData(prev => ({ ...prev, phoneNumber: e.target.value }))}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Ex: +221 77 123 45 67"
+                />
+              </div>
+              <p className="mt-1 text-xs text-gray-500">
+                Numéro utilisé pour le paiement {paymentData.method === 'WAVE' ? 'Wave' : 'Orange Money'}
+              </p>
+            </div>
+          )}
+
           {/* ID de transaction */}
           <div>
             <label htmlFor="transactionId" className="block text-sm font-medium text-gray-700 mb-2">
@@ -211,7 +242,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
               <input
                 type="text"
                 id="transactionId"
-                value={paymentData.transactionId}
+                value={paymentData.transactionId || ''}
                 onChange={(e) => setPaymentData(prev => ({ ...prev, transactionId: e.target.value }))}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Ex: TXN123456789 ou Référence du paiement"
@@ -221,6 +252,21 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
             <p className="mt-1 text-xs text-gray-500">
               Saisissez l'ID de transaction {paymentData.method === 'CASH' ? 'ou une référence interne' : 'fourni par le service de paiement'}
             </p>
+          </div>
+
+          {/* Notes */}
+          <div>
+            <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-2">
+              Notes (optionnel)
+            </label>
+            <textarea
+              id="notes"
+              value={paymentData.notes || ''}
+              onChange={(e) => setPaymentData(prev => ({ ...prev, notes: e.target.value }))}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Informations supplémentaires sur le paiement..."
+              rows={3}
+            />
           </div>
 
           {/* Actions */}

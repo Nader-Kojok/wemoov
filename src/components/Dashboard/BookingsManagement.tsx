@@ -317,8 +317,8 @@ const BookingsManagementContent: React.FC = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/dashboard/bookings/${completingBooking.id}/complete`, {
-        method: 'PATCH',
+      const response = await fetch(`/api/bookings/${completingBooking.id}/complete`, {
+        method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

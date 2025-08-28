@@ -61,7 +61,7 @@ const PaymentsManagement: React.FC = () => {
       if (methodFilter) params.append('method', methodFilter);
       if (searchTerm) params.append('search', searchTerm);
 
-      const response = await fetch(`/api/dashboard/payments?${params}`, {
+      const response = await fetch(`/api/payments?${params}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
