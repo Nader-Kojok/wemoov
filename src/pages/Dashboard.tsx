@@ -7,6 +7,7 @@ import BookingsManagement from '../components/Dashboard/BookingsManagement';
 import DriversVehiclesManagement from '../components/Dashboard/DriversVehiclesManagement';
 import PaymentsManagement from '../components/Dashboard/PaymentsManagement';
 import AnalyticsManagement from '../components/Dashboard/AnalyticsManagement';
+import SchedulerManagement from '../components/Dashboard/SchedulerManagement';
 import DatabaseManagement from '../components/Dashboard/DatabaseManagement';
 import SettingsManagement from '../components/Dashboard/SettingsManagement';
 
@@ -20,6 +21,7 @@ const Dashboard: React.FC = () => {
         <Route path="drivers" element={<DriversVehiclesManagement />} />
         <Route path="payments" element={<PaymentsManagement />} />
         <Route path="analytics" element={<AnalyticsManagement />} />
+        <Route path="scheduler" element={<SchedulerManagement />} />
         <Route path="database" element={<DatabaseManagement />} />
         <Route path="settings" element={<SettingsManagement />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />

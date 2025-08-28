@@ -340,6 +340,37 @@ const BookingsManagementContent: React.FC = () => {
     }
   };
 
+  const handleStartTrip = async (booking: Booking) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/bookings/${booking.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: 'IN_PROGRESS' })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error?.message || 'Erreur lors du démarrage de la course';
+        throw new Error(errorMessage);
+      }
+
+      fetchBookings();
+      showSuccess(
+        'Course démarrée',
+        'La course a été marquée comme en cours avec succès'
+      );
+    } catch (err) {
+      showError(
+        'Erreur de démarrage',
+        err instanceof Error ? err.message : 'Une erreur inattendue s\'est produite'
+      );
+    }
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
@@ -549,6 +580,7 @@ const BookingsManagementContent: React.FC = () => {
                   }}
                   onDelete={handleDeleteBooking}
                   onComplete={handleCompleteBooking}
+                  onStartTrip={handleStartTrip}
                   formatCurrency={formatCurrency}
                 />
               ))}

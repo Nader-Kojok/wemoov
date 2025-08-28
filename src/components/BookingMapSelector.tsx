@@ -4,7 +4,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { MapPin, Search, X, Navigation, Target, ArrowUpDown } from 'lucide-react';
+import { MapPin, Navigation, Target, ArrowUpDown } from 'lucide-react';
 
 // Set Mapbox access token
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
@@ -30,10 +30,12 @@ const BookingMapSelector: React.FC<BookingMapSelectorProps> = ({
   const map = useRef<mapboxgl.Map | null>(null);
   const pickupMarker = useRef<mapboxgl.Marker | null>(null);
   const destinationMarker = useRef<mapboxgl.Marker | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [showResults, setShowResults] = useState(false);
-  const [activeField, setActiveField] = useState<'pickup' | 'destination' | null>(null);
+  const [pickupSearchQuery, setPickupSearchQuery] = useState('');
+  const [destinationSearchQuery, setDestinationSearchQuery] = useState('');
+  const [pickupSearchResults, setPickupSearchResults] = useState<any[]>([]);
+  const [destinationSearchResults, setDestinationSearchResults] = useState<any[]>([]);
+  const [showPickupResults, setShowPickupResults] = useState(false);
+  const [showDestinationResults, setShowDestinationResults] = useState(false);
   const [localPickup, setLocalPickup] = useState(pickupLocation);
   const [localDestination, setLocalDestination] = useState(destination);
 
@@ -82,8 +84,8 @@ const BookingMapSelector: React.FC<BookingMapSelectorProps> = ({
   const handleMapClick = useCallback(async (e: mapboxgl.MapMouseEvent) => {
     const { lng, lat } = e.lngLat;
     
-    // If no active field, default to pickup
-    const field = activeField || 'pickup';
+    // Default to pickup if no specific field is being edited
+    const field = 'pickup';
     
     try {
       const address = await reverseGeocode(lng, lat);
@@ -112,7 +114,7 @@ const BookingMapSelector: React.FC<BookingMapSelectorProps> = ({
         addDestinationMarker(lng, lat);
       }
     }
-  }, [activeField, onPickupChange, onDestinationChange]);
+  }, [onPickupChange, onDestinationChange]);
 
   // Add or update pickup marker
   const addPickupMarker = (lng: number, lat: number) => {
@@ -273,69 +275,100 @@ const BookingMapSelector: React.FC<BookingMapSelectorProps> = ({
     }
   };
 
-  // Search for locations
-  const searchLocations = async (query: string) => {
-    if (!query.trim()) {
-      setSearchResults([]);
-      setShowResults(false);
+  // Handle pickup search input change
+  const handlePickupSearchChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setPickupSearchQuery(query);
+    setLocalPickup(query);
+    onPickupChange?.(query);
+
+    if (query.length < 2) {
+      setPickupSearchResults([]);
+      setShowPickupResults(false);
       return;
     }
 
     try {
       const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${mapboxgl.accessToken}&limit=5&country=SN`
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${mapboxgl.accessToken}&country=SN&limit=5`
       );
       const data = await response.json();
-      
-      setSearchResults(data.features || []);
-      setShowResults(true);
+      setPickupSearchResults(data.features || []);
+      setShowPickupResults(true);
     } catch (error) {
-      console.error('Search error:', error);
-      setSearchResults([]);
+      console.error('Error searching pickup locations:', error);
+      setPickupSearchResults([]);
+      setShowPickupResults(false);
     }
-  };
+  }, [onPickupChange]);
 
-  // Handle search input change
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setSearchQuery(value);
-    
-    // Debounce search
-    const timeoutId = setTimeout(() => {
-      searchLocations(value);
-    }, 300);
+  // Handle destination search input change
+  const handleDestinationSearchChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setDestinationSearchQuery(query);
+    setLocalDestination(query);
+    onDestinationChange?.(query);
 
-    return () => clearTimeout(timeoutId);
-  };
+    if (query.length < 2) {
+      setDestinationSearchResults([]);
+      setShowDestinationResults(false);
+      return;
+    }
 
-  // Handle search result selection
-  const handleResultSelect = (result: any) => {
-    const [lng, lat] = result.center;
-    const address = result.place_name;
-    
-    // Fly to location
+    try {
+      const response = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${mapboxgl.accessToken}&country=SN&limit=5`
+      );
+      const data = await response.json();
+      setDestinationSearchResults(data.features || []);
+      setShowDestinationResults(true);
+    } catch (error) {
+      console.error('Error searching destination locations:', error);
+      setDestinationSearchResults([]);
+      setShowDestinationResults(false);
+    }
+  }, [onDestinationChange]);
+
+  // Handle pickup search result selection
+  const handlePickupResultSelect = (result: any) => {
+    const [longitude, latitude] = result.center;
+    const locationString = result.place_name;
+
+    setLocalPickup(locationString);
+    setPickupSearchQuery(locationString);
+    onPickupChange?.(locationString);
+    addPickupMarker(longitude, latitude);
+    setShowPickupResults(false);
+
+    // Center map on selected location
     if (map.current) {
       map.current.flyTo({
-        center: [lng, lat],
+        center: [longitude, latitude],
         zoom: 15,
         duration: 1000
       });
     }
-    
-    // Add marker based on active field
-    if (activeField === 'destination') {
-      setLocalDestination(address);
-      onDestinationChange?.(address);
-      addDestinationMarker(lng, lat);
-    } else {
-      setLocalPickup(address);
-      onPickupChange?.(address);
-      addPickupMarker(lng, lat);
+  };
+
+  // Handle destination search result selection
+  const handleDestinationResultSelect = (result: any) => {
+    const [longitude, latitude] = result.center;
+    const locationString = result.place_name;
+
+    setLocalDestination(locationString);
+    setDestinationSearchQuery(locationString);
+    onDestinationChange?.(locationString);
+    addDestinationMarker(longitude, latitude);
+    setShowDestinationResults(false);
+
+    // Center map on selected location
+    if (map.current) {
+      map.current.flyTo({
+        center: [longitude, latitude],
+        zoom: 15,
+        duration: 1000
+      });
     }
-    
-    setSearchQuery('');
-    setShowResults(false);
-    setActiveField(null);
   };
 
   // Get current location
@@ -396,57 +429,6 @@ const BookingMapSelector: React.FC<BookingMapSelectorProps> = ({
 
   return (
     <div className={`space-y-4 ${className}`}>
-      {/* Search Bar */}
-      <div className="relative">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input
-            type="text"
-            placeholder={`Rechercher ${activeField === 'destination' ? 'une destination' : 'un point de départ'}...`}
-            value={searchQuery}
-            onChange={handleSearchChange}
-            className="pl-10 pr-10 bg-white shadow-sm border-gray-200"
-          />
-          {searchQuery && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setSearchQuery('');
-                setShowResults(false);
-              }}
-              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-        
-        {/* Search Results */}
-        {showResults && searchResults.length > 0 && (
-          <div className="absolute top-full mt-1 w-full bg-white rounded-md shadow-lg border border-gray-200 max-h-60 overflow-y-auto z-20">
-            {searchResults.map((result, index) => (
-              <button
-                key={index}
-                onClick={() => handleResultSelect(result)}
-                className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 focus:outline-none focus:bg-gray-50"
-              >
-                <div className="flex items-start space-x-3">
-                  <MapPin className="h-4 w-4 text-gray-400 mt-1 flex-shrink-0" />
-                  <div>
-                    <div className="font-medium text-gray-900 text-sm">
-                      {result.text}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      {result.place_name}
-                    </div>
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
 
       {/* Location Inputs */}
       <div className="grid grid-cols-1 gap-3">
@@ -458,15 +440,44 @@ const BookingMapSelector: React.FC<BookingMapSelectorProps> = ({
               <MapPin className="absolute left-3 top-3 h-4 w-4 text-green-600" />
               <Input
                 id="pickup"
-                placeholder="Cliquez sur la carte ou recherchez..."
-                value={localPickup}
-                onChange={(e) => {
-                  setLocalPickup(e.target.value);
-                  onPickupChange?.(e.target.value);
+                placeholder="Tapez pour rechercher..."
+                value={pickupSearchQuery || localPickup}
+                onChange={handlePickupSearchChange}
+                onFocus={() => {
+                  setPickupSearchQuery(localPickup);
+                  if (localPickup.length >= 2) {
+                    setShowPickupResults(true);
+                  }
                 }}
-                onFocus={() => setActiveField('pickup')}
+                onBlur={() => {
+                  setTimeout(() => setShowPickupResults(false), 200);
+                }}
                 className="pl-10 pr-4 border-green-200 focus:border-green-500 focus:ring-green-500"
               />
+              {/* Pickup Search Results */}
+              {showPickupResults && pickupSearchResults.length > 0 && (
+                <div className="absolute top-full mt-1 w-full bg-white rounded-md shadow-lg border border-gray-200 max-h-60 overflow-y-auto z-20">
+                  {pickupSearchResults.map((result, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handlePickupResultSelect(result)}
+                      className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 focus:outline-none focus:bg-gray-50"
+                    >
+                      <div className="flex items-start space-x-3">
+                        <MapPin className="h-4 w-4 text-gray-400 mt-1 flex-shrink-0" />
+                        <div>
+                          <div className="font-medium text-gray-900 text-sm">
+                            {result.text}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {result.place_name}
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <Button
               type="button"
@@ -477,19 +488,6 @@ const BookingMapSelector: React.FC<BookingMapSelectorProps> = ({
               title="Utiliser ma position actuelle"
             >
               <Navigation className="h-4 w-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              onClick={() => {
-                setActiveField('pickup');
-                setSearchQuery('');
-              }}
-              className="shrink-0 border-green-200 text-green-600 hover:bg-green-50"
-              title="Rechercher sur la carte"
-            >
-              <Search className="h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -518,15 +516,44 @@ const BookingMapSelector: React.FC<BookingMapSelectorProps> = ({
               <Target className="absolute left-3 top-3 h-4 w-4 text-red-600" />
               <Input
                 id="destination"
-                placeholder="Cliquez sur la carte ou recherchez..."
-                value={localDestination}
-                onChange={(e) => {
-                  setLocalDestination(e.target.value);
-                  onDestinationChange?.(e.target.value);
+                placeholder="Tapez pour rechercher..."
+                value={destinationSearchQuery || localDestination}
+                onChange={handleDestinationSearchChange}
+                onFocus={() => {
+                  setDestinationSearchQuery(localDestination);
+                  if (localDestination.length >= 2) {
+                    setShowDestinationResults(true);
+                  }
                 }}
-                onFocus={() => setActiveField('destination')}
+                onBlur={() => {
+                  setTimeout(() => setShowDestinationResults(false), 200);
+                }}
                 className="pl-10 pr-4 border-red-200 focus:border-red-500 focus:ring-red-500"
               />
+              {/* Destination Search Results */}
+              {showDestinationResults && destinationSearchResults.length > 0 && (
+                <div className="absolute top-full mt-1 w-full bg-white rounded-md shadow-lg border border-gray-200 max-h-60 overflow-y-auto z-20">
+                  {destinationSearchResults.map((result, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleDestinationResultSelect(result)}
+                      className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 focus:outline-none focus:bg-gray-50"
+                    >
+                      <div className="flex items-start space-x-3">
+                        <Target className="h-4 w-4 text-gray-400 mt-1 flex-shrink-0" />
+                        <div>
+                          <div className="font-medium text-gray-900 text-sm">
+                            {result.text}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {result.place_name}
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <Button
               type="button"
@@ -537,19 +564,6 @@ const BookingMapSelector: React.FC<BookingMapSelectorProps> = ({
               title="Utiliser ma position actuelle"
             >
               <Navigation className="h-4 w-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              onClick={() => {
-                setActiveField('destination');
-                setSearchQuery('');
-              }}
-              className="shrink-0 border-red-200 text-red-600 hover:bg-red-50"
-              title="Rechercher sur la carte"
-            >
-              <Search className="h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -562,18 +576,7 @@ const BookingMapSelector: React.FC<BookingMapSelectorProps> = ({
         style={{ height }}
       />
 
-      {/* Instructions */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-        <div className="text-sm text-blue-800">
-          <strong>Instructions:</strong>
-          <ul className="mt-1 text-xs space-y-1">
-            <li>• <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-1"></span>Vert = Point de départ</li>
-            <li>• <span className="inline-block w-2 h-2 bg-red-500 rounded-full mr-1"></span>Rouge = Destination</li>
-            <li>• Cliquez sur la carte pour placer un marqueur</li>
-            <li>• Faites glisser les marqueurs pour ajuster la position</li>
-          </ul>
-        </div>
-      </div>
+
     </div>
   );
 };

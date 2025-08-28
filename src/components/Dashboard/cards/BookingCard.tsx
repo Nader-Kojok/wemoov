@@ -58,6 +58,7 @@ interface BookingCardProps {
   onView: (booking: Booking) => void;
   onDelete: (bookingId: string) => void;
   onComplete?: (booking: Booking) => void;
+  onStartTrip?: (booking: Booking) => void;
   formatCurrency: (amount: number) => string;
 }
 
@@ -68,6 +69,7 @@ const BookingCard: React.FC<BookingCardProps> = ({
   onView,
   onDelete,
   onComplete,
+  onStartTrip,
   formatCurrency
 }) => {
   const getStatusConfig = (status: string) => {
@@ -132,7 +134,8 @@ const BookingCard: React.FC<BookingCardProps> = ({
   // Allow driver assignment for all active booking statuses (not completed/cancelled)
   // This matches the backend logic for flexible manual driver management
   const canAssign = ['PENDING', 'CONFIRMED', 'ASSIGNED', 'IN_PROGRESS'].includes(booking.status);
-  const canComplete = booking.status === 'IN_PROGRESS' && onComplete;
+  const canComplete = ['ASSIGNED', 'IN_PROGRESS'].includes(booking.status) && onComplete;
+  const canStartTrip = booking.status === 'ASSIGNED' && booking.driver && onStartTrip;
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200 overflow-hidden">
@@ -170,6 +173,15 @@ const BookingCard: React.FC<BookingCardProps> = ({
               title={booking.driver ? "Réassigner le chauffeur" : "Assigner un chauffeur"}
             >
               <UserCheck className="h-4 w-4" />
+            </button>
+          )}
+          {canStartTrip && (
+            <button
+              onClick={() => onStartTrip(booking)}
+              className="p-2 text-purple-500 hover:text-purple-700 hover:bg-purple-50 rounded-lg transition-colors"
+              title="Démarrer la course"
+            >
+              <PlayCircle className="h-4 w-4" />
             </button>
           )}
           {canComplete && (

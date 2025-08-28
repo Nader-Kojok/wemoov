@@ -15,11 +15,15 @@ import paymentRoutes from './routes/payments.js';
 import geocodingRoutes from './routes/geocoding.js';
 import dashboardRoutes from './routes/dashboard.js';
 import driversRoutes from './routes/drivers.js';
+import schedulerRoutes from './routes/scheduler.js';
 
 // Import des middlewares
 import { errorHandler } from './middleware/errorHandler.js';
 import { notFound } from './middleware/notFound.js';
 import { rateLimiter } from './middleware/rateLimiter.js';
+
+// Import du service de planification
+import { SchedulerService } from './services/schedulerService.js';
 
 // Configuration des variables d'environnement
 dotenv.config();
@@ -75,10 +79,14 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/geocoding', geocodingRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/admin', driversRoutes);
+app.use('/api/scheduler', schedulerRoutes);
 
 // Middlewares de gestion d'erreurs
 app.use(notFound);
 app.use(errorHandler);
+
+// Variable globale pour le scheduler
+let schedulerInterval: NodeJS.Timeout | null = null;
 
 // Démarrage du serveur (seulement en développement local)
 if (process.env.NODE_ENV !== 'production') {
@@ -87,7 +95,29 @@ if (process.env.NODE_ENV !== 'production') {
     console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`🌐 CORS enabled for: ${process.env.CORS_ORIGIN || 'http://localhost:5173'}`);
     console.log(`📊 Health check available at: http://localhost:${PORT}/health`);
+    
+    // Démarrer le scheduler automatique
+    const schedulerIntervalMinutes = parseInt(process.env.SCHEDULER_INTERVAL_MINUTES || '1');
+    schedulerInterval = SchedulerService.startScheduler(schedulerIntervalMinutes);
+    console.log(`⏰ Scheduler démarré avec un intervalle de ${schedulerIntervalMinutes} minute(s)`);
   });
 }
+
+// Gestion propre de l'arrêt du serveur
+process.on('SIGTERM', () => {
+  console.log('🛑 Arrêt du serveur en cours...');
+  if (schedulerInterval) {
+    SchedulerService.stopScheduler(schedulerInterval);
+  }
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('🛑 Arrêt du serveur en cours...');
+  if (schedulerInterval) {
+    SchedulerService.stopScheduler(schedulerInterval);
+  }
+  process.exit(0);
+});
 
 export default app;

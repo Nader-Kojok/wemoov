@@ -9,6 +9,7 @@ import {
   BarChart3,
   Settings,
   Database,
+  Clock,
   LogOut,
   Menu,
   X
@@ -51,6 +52,11 @@ const sidebarItems: SidebarItem[] = [
     name: 'Statistiques',
     href: '/dashboard/analytics',
     icon: BarChart3
+  },
+  {
+    name: 'Scheduler Auto',
+    href: '/dashboard/scheduler',
+    icon: Clock
   },
   {
     name: 'Base de Données',
