@@ -39,7 +39,7 @@ const Footer = () => {
               />
             </div>
             <p className="text-white/90 leading-relaxed">
-              Votre partenaire de confiance pour tous vos déplacements au Sénégal. 
+              Votre partenaire de confiance pour tous vos déplacements au Sénégal.{' '}
               <span className="font-semibold text-white">Service VTC professionnel, sécurisé et disponible 24h/24.</span>
             </p>
             <div className="flex space-x-3">

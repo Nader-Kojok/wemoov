@@ -1,9 +1,11 @@
 import { Button } from '@/components/ui/button'
 import { useState } from 'react'
-import { Menu, X, Phone } from 'lucide-react'
+import { Menu, X, Car, ArrowRight } from 'lucide-react'
+import { BookingModal } from '@/components/BookingModal'
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false)
 
   const navItems = [
     { name: 'Accueil', href: '#home' },
@@ -21,13 +23,13 @@ const Navbar = () => {
         <div className="flex justify-between items-center h-20">
           {/* Logo */}
           <div className="flex-shrink-0">
-            <div className="flex items-center space-x-3">
+            <a href="#home" className="flex items-center space-x-3 hover:opacity-80 transition-opacity duration-200">
               <img 
                 src="/logo.png" 
                 alt="Wemoov Logo" 
                 className="h-12 w-auto"
               />
-            </div>
+            </a>
           </div>
 
           {/* Desktop Navigation */}
@@ -45,11 +47,16 @@ const Navbar = () => {
             </div>
           </div>
 
-          {/* Contact Button */}
+          {/* CTA Button */}
           <div className="hidden lg:block">
-            <Button className="bg-gradient-to-r from-[#1E5EFF] to-[#2D2D2D] hover:from-[#1E5EFF]/90 hover:to-[#2D2D2D]/90 text-white px-6 py-3 font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-              <Phone className="w-4 h-4 mr-2" />
-              +221 33 801 82 82
+            <Button 
+              size="lg" 
+              onClick={() => setIsBookingModalOpen(true)}
+              className="group bg-[#1E5EFF] hover:bg-[#1E5EFF]/90 text-white px-8 py-4 text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
+            >
+              <Car className="mr-2 h-5 w-5 group-hover:rotate-12 transition-transform" />
+              Réserver maintenant
+              <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
             </Button>
           </div>
 
@@ -80,14 +87,25 @@ const Navbar = () => {
               </a>
             ))}
             <div className="pt-4">
-              <Button className="bg-gradient-to-r from-[#1E5EFF] to-[#2D2D2D] hover:from-[#1E5EFF]/90 hover:to-[#2D2D2D]/90 text-white w-full py-3 font-semibold shadow-lg">
-                <Phone className="w-4 h-4 mr-2" />
-                +221 33 801 82 82
+              <Button 
+                size="lg" 
+                onClick={() => setIsBookingModalOpen(true)}
+                className="group bg-[#1E5EFF] hover:bg-[#1E5EFF]/90 text-white w-full px-8 py-4 text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
+              >
+                <Car className="mr-2 h-5 w-5 group-hover:rotate-12 transition-transform" />
+                Réserver maintenant
+                <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Button>
             </div>
           </div>
         </div>
       )}
+      
+      {/* Booking Modal */}
+      <BookingModal 
+        open={isBookingModalOpen} 
+        onOpenChange={setIsBookingModalOpen} 
+      />
     </nav>
   )
 }

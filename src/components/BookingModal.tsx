@@ -6,8 +6,10 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent } from "@/components/ui/card"
 // Removed Tabs import as we're using service selection cards instead
-import { MapPin, Calendar, Clock, Users, Phone, Mail, User, Target, Car, Plane, Timer, X } from "lucide-react"
+import { MapPin, Calendar, Clock, Users, Phone, Mail, User, Target, Car, Plane, Timer, X, AlertTriangle, CheckCircle } from "lucide-react"
 import BookingMapSelector from './BookingMapSelector'
+import { useFormSimulation } from '@/utils/formSimulation'
+import type { FormField } from '@/utils/formSimulation'
 
 interface BookingModalProps {
   open: boolean
@@ -94,6 +96,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, onOpenChange }
     hourlyDuration: "1",
     dailyDuration: "1"
   })
+
+  const { isSubmitting, simulationResult, submitForm, clearResult } = useFormSimulation()
 
   const getStepsForService = (serviceId: string | null) => {
     if (!serviceId) return [{ id: 0, title: "Service", component: "service" }]
@@ -223,121 +227,135 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, onOpenChange }
    }
 
   const handleSubmit = async () => {
-    try {
-      // Define required fields based on service type
-      const requiredFields: Record<string, string> = {
-        pickupLocation: bookingData.pickupLocation,
-        date: bookingData.date,
-        time: bookingData.time,
-        passengers: bookingData.passengers,
-        firstName: bookingData.firstName,
-        lastName: bookingData.lastName,
-        phone: bookingData.phone
+    // Clear any previous results
+    if (simulationResult) {
+      clearResult()
+    }
+
+    // Build form fields for validation
+    const fields: FormField[] = [
+      {
+        name: 'pickupLocation',
+        value: bookingData.pickupLocation,
+        required: true,
+        type: 'text',
+        minLength: 5
+      },
+      {
+        name: 'date',
+        value: bookingData.date,
+        required: true,
+        type: 'text'
+      },
+      {
+        name: 'time',
+        value: bookingData.time,
+        required: true,
+        type: 'text'
+      },
+      {
+        name: 'passengers',
+        value: bookingData.passengers,
+        required: true,
+        type: 'number'
+      },
+      {
+        name: 'firstName',
+        value: bookingData.firstName,
+        required: true,
+        type: 'text',
+        minLength: 2
+      },
+      {
+        name: 'lastName',
+        value: bookingData.lastName,
+        required: true,
+        type: 'text',
+        minLength: 2
+      },
+      {
+        name: 'phone',
+        value: bookingData.phone,
+        required: true,
+        type: 'phone'
       }
+    ]
 
-      // Only require destination for "course" service (point A to point B)
-      if (selectedService === "course") {
-        requiredFields.destination = bookingData.destination
-      }
+    // Add destination field if required for course service
+    if (selectedService === "course") {
+      fields.push({
+        name: 'destination',
+        value: bookingData.destination,
+        required: true,
+        type: 'text',
+        minLength: 5
+      })
+    }
 
-      // Validate rental-specific fields
-      if (selectedService === "hourly" || selectedService === "rental") {
-        if (!bookingData.rentalType) {
-          alert('Veuillez sélectionner un type de location')
-          return
-        }
-        
-        if (bookingData.rentalType === 'hourly') {
-          const hours = parseInt(bookingData.hourlyDuration)
-          if (!hours || hours < 1 || hours > 24) {
-            alert('Veuillez saisir un nombre d\'heures valide (1-24)')
-            return
-          }
-        }
-        
-        if (bookingData.rentalType === 'daily' || bookingData.rentalType === 'weekly') {
-          const duration = parseInt(bookingData.dailyDuration)
-          const maxValue = bookingData.rentalType === 'daily' ? 365 : 52
-          const unit = bookingData.rentalType === 'daily' ? 'jours' : 'semaines'
-          if (!duration || duration < 1 || duration > maxValue) {
-            alert(`Veuillez saisir un nombre de ${unit} valide (1-${maxValue})`)
-            return
-          }
-        }
-      }
+    // Add email if provided
+    if (bookingData.email) {
+      fields.push({
+        name: 'email',
+        value: bookingData.email,
+        required: false,
+        type: 'email'
+      })
+    }
 
-      const missingFields = Object.entries(requiredFields)
-        .filter(([, value]) => !value || value.toString().trim() === '')
-        .map(([key]) => key)
-
-      if (missingFields.length > 0) {
-        alert(`Veuillez remplir tous les champs requis: ${missingFields.join(', ')}`)
+    // Validate rental-specific fields
+    if (selectedService === "hourly" || selectedService === "rental") {
+      if (!bookingData.rentalType) {
+        alert('Veuillez sélectionner un type de location')
         return
       }
-
-      let serviceType = selectedService || bookingData.serviceType
-      if (selectedService === "course" && bookingData.destination.toLowerCase().includes("aéroport")) {
-        serviceType = "airport"
+      
+      if (bookingData.rentalType === 'hourly') {
+        const hours = parseInt(bookingData.hourlyDuration)
+        if (!hours || hours < 1 || hours > 24) {
+          alert('Veuillez saisir un nombre d\'heures valide (1-24)')
+          return
+        }
       }
-
-      const bookingPayload = {
-        serviceType,
-        pickupLocation: bookingData.pickupLocation,
-        destination: bookingData.destination,
-        scheduledDate: bookingData.date,
-        scheduledTime: bookingData.time,
-        passengers: parseInt(bookingData.passengers),
-        vehicleType: bookingData.vehicleType || 'SEDAN',
-        specialRequests: bookingData.specialRequests,
-        firstName: bookingData.firstName,
-        lastName: bookingData.lastName,
-        phone: bookingData.phone,
-        email: bookingData.email,
-        rentalDuration: bookingData.rentalType === 'hourly' ? bookingData.hourlyDuration : bookingData.dailyDuration,
-        rentalType: bookingData.rentalType,
-        withDriver: bookingData.withDriver,
-        hourlyDuration: bookingData.hourlyDuration,
-        dailyDuration: bookingData.dailyDuration
+      
+      if (bookingData.rentalType === 'daily' || bookingData.rentalType === 'weekly') {
+        const duration = parseInt(bookingData.dailyDuration)
+        const maxValue = bookingData.rentalType === 'daily' ? 365 : 52
+        const unit = bookingData.rentalType === 'daily' ? 'jours' : 'semaines'
+        if (!duration || duration < 1 || duration > maxValue) {
+          alert(`Veuillez saisir un nombre de ${unit} valide (1-${maxValue})`)
+          return
+        }
       }
+    }
 
-      const response = await fetch('/api/public/bookings', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(bookingPayload)
+    // Submit form with simulation
+    const result = await submitForm(fields, 'booking')
+    
+    if (result.success) {
+      // Reset form data on success
+      setBookingData({
+        serviceType: '',
+        pickupLocation: '',
+        destination: '',
+        date: '',
+        time: '',
+        passengers: '1',
+        vehicleType: '',
+        firstName: '',
+        lastName: '',
+        phone: '',
+        email: '',
+        specialRequests: '',
+        rentalDuration: '',
+        rentalType: '',
+        withDriver: true,
+        hourlyDuration: '1',
+        dailyDuration: '1'
       })
-
-      const result = await response.json()
-
-      if (response.ok && result.success) {
-        alert('Réservation créée avec succès! Vous serez contacté prochainement.')
-        setBookingData({
-          serviceType: '',
-          pickupLocation: '',
-          destination: '',
-          date: '',
-          time: '',
-          passengers: '1',
-          vehicleType: '',
-          firstName: '',
-          lastName: '',
-          phone: '',
-          email: '',
-          specialRequests: '',
-          rentalDuration: '',
-          rentalType: '',
-          withDriver: true,
-          hourlyDuration: '1',
-          dailyDuration: '1'
-        })
+      // Don't close modal immediately, let user see the success message
+      setTimeout(() => {
         onOpenChange(false)
-      } else {
-        throw new Error(result.error?.message || 'Erreur lors de la création de la réservation')
-      }
-    } catch (error) {
-      console.error('Erreur lors de la soumission:', error)
-      alert(`Erreur: ${error instanceof Error ? error.message : 'Une erreur est survenue'}`)
+      }, 3000)
     }
   }
 
@@ -952,12 +970,62 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, onOpenChange }
               ) : (
                 <Button 
                   onClick={handleSubmit}
-                  className="flex-1 bg-gradient-to-r from-[#1E5EFF] to-[#4A90E2] hover:from-[#1E5EFF]/90 hover:to-[#4A90E2]/90 h-12 text-base font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+                  disabled={isSubmitting}
+                  className="flex-1 bg-gradient-to-r from-[#1E5EFF] to-[#4A90E2] hover:from-[#1E5EFF]/90 hover:to-[#4A90E2]/90 h-12 text-base font-semibold shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Confirmer la réservation
+                  {isSubmitting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                      Traitement en cours...
+                    </>
+                  ) : (
+                    'Confirmer la réservation'
+                  )}
                 </Button>
               )}
             </div>
+
+            {/* Form Result - Displayed after form submission */}
+            {simulationResult && (
+              <div className={`${simulationResult.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} border rounded-lg p-4 mt-6 mx-6`}>
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    {simulationResult.success ? (
+                      <CheckCircle className="h-5 w-5 text-green-400" />
+                    ) : (
+                      <AlertTriangle className="h-5 w-5 text-red-400" />
+                    )}
+                  </div>
+                  <div className="ml-3 flex-1">
+                    <p className={`text-sm font-medium ${simulationResult.success ? 'text-green-800' : 'text-red-800'}`}>
+                      {simulationResult.message}
+                    </p>
+                    {simulationResult.data && (
+                      <div className={`mt-2 text-xs ${simulationResult.success ? 'text-green-800' : 'text-red-800'}`}>
+                        <p>Référence: {simulationResult.data.bookingNumber}</p>
+                        <p>Arrivée estimée: {simulationResult.data.estimatedArrival}</p>
+                      </div>
+                    )}
+                    {simulationResult.errors && (
+                      <ul className={`mt-2 text-xs ${simulationResult.success ? 'text-green-800' : 'text-red-800'} list-disc list-inside`}>
+                        {simulationResult.errors.map((error, index) => (
+                          <li key={index}>{error.message}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                  <div className="ml-auto pl-3">
+                    <button
+                      type="button"
+                      onClick={clearResult}
+                      className={`inline-flex ${simulationResult.success ? 'text-green-400' : 'text-red-400'} hover:opacity-75 focus:outline-none`}
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </DialogContent>

@@ -11,17 +11,17 @@ const Hero = () => {
     {
       title: "Réservation Instantanée",
       description: "Réservez votre course en quelques clics",
-      icon: <Car className="h-8 w-8" />
+      icon: <Car className="h-8 w-8 text-white" />
     },
     {
       title: "Chauffeurs Professionnels",
       description: "Équipe expérimentée et certifiée",
-      icon: <Users className="h-8 w-8" />
+      icon: <Users className="h-8 w-8 text-white" />
     },
     {
       title: "Service 24/7",
       description: "Disponible à tout moment",
-      icon: <Clock className="h-8 w-8" />
+      icon: <Clock className="h-8 w-8 text-white" />
     }
   ]
 
@@ -42,8 +42,8 @@ const Hero = () => {
           <div className="absolute top-1/2 left-1/3 w-24 h-24 bg-[#1E5EFF]/15 rounded-full blur-xl animate-pulse delay-500" />
         </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center min-h-screen">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-20 sm:pt-28 lg:py-20">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center min-h-[calc(100vh-6rem)] sm:min-h-[calc(100vh-7rem)] lg:min-h-screen">
             {/* Left Content - Deconstructed Layout */}
             <div className="lg:col-span-7 space-y-8">
               {/* Hero Text with Modern Typography */}
@@ -64,7 +64,7 @@ const Hero = () => {
                 </h1>
                 
                 <p className="text-xl text-[#2D2D2D]/80 leading-relaxed max-w-lg">
-                  Découvrez l'excellence du transport avec chauffeur. 
+                  Découvrez l'excellence du transport avec chauffeur.{' '}
                   <span className="font-semibold text-[#2D2D2D]">Sécurisé, confortable et disponible 24h/24.</span>
                 </p>
               </div>

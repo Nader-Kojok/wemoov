@@ -1,7 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Building, Users, Calendar, Clock, Star, CheckCircle, Mail, Phone, Send } from 'lucide-react'
+import { Building, Users, Clock, CheckCircle, Star, Phone, Mail, Send, AlertTriangle, X, Calendar } from 'lucide-react'
 import { useState } from 'react'
+import { useFormSimulation } from '@/utils/formSimulation'
+import type { FormField } from '@/utils/formSimulation'
+import * as React from 'react'
 
 const BusinessServices = () => {
   const [formData, setFormData] = useState({
@@ -82,18 +85,76 @@ const BusinessServices = () => {
     }
   ]
 
+  const { isSubmitting, simulationResult, submitForm, clearResult } = useFormSimulation()
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
     })
+    // Clear any previous results when user starts typing
+    if (simulationResult) {
+      clearResult()
+    }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Logique de soumission du formulaire
-    console.log('Formulaire soumis:', formData)
-    alert('Votre demande de devis a été envoyée avec succès !')
+    
+    const fields: FormField[] = [
+      {
+        name: 'company',
+        value: formData.company,
+        required: true,
+        type: 'text',
+        minLength: 2
+      },
+      {
+        name: 'contact',
+        value: formData.contact,
+        required: true,
+        type: 'text',
+        minLength: 2
+      },
+      {
+        name: 'email',
+        value: formData.email,
+        required: true,
+        type: 'email'
+      },
+      {
+        name: 'phone',
+        value: formData.phone,
+        required: true,
+        type: 'phone'
+      },
+      {
+        name: 'service',
+        value: formData.service,
+        required: true,
+        type: 'select'
+      },
+      {
+        name: 'details',
+        value: formData.details,
+        required: true,
+        type: 'textarea',
+        minLength: 10
+      }
+    ]
+
+    const result = await submitForm(fields, 'business')
+    
+    if (result.success) {
+      setFormData({
+        company: '',
+        contact: '',
+        email: '',
+        phone: '',
+        service: '',
+        details: ''
+      })
+    }
   }
 
   return (
@@ -298,12 +359,64 @@ const BusinessServices = () => {
                 </div>
                 <Button 
                   type="submit" 
-                  className="w-full bg-gradient-to-r from-[#1E5EFF] to-[#2D2D2D] hover:from-[#1E5EFF]/90 hover:to-[#2D2D2D]/90 text-white py-4 text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
+                  disabled={isSubmitting}
+                  className="w-full bg-gradient-to-r from-[#1E5EFF] to-[#2D2D2D] hover:from-[#1E5EFF]/90 hover:to-[#2D2D2D]/90 text-white py-4 text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                 >
-                  <Send className="mr-2 h-5 w-5" />
-                  Envoyer ma demande de devis
+                  {isSubmitting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                      Envoi en cours...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="mr-2 h-5 w-5" />
+                      Envoyer ma demande de devis
+                    </>
+                  )}
                 </Button>
               </form>
+
+              {/* Form Result - Displayed after form submission */}
+              {simulationResult && (
+                <div className={`${simulationResult.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} border rounded-lg p-4 mt-6`}>
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0">
+                      {simulationResult.success ? (
+                        <CheckCircle className="h-5 w-5 text-green-400" />
+                      ) : (
+                        <AlertTriangle className="h-5 w-5 text-red-400" />
+                      )}
+                    </div>
+                    <div className="ml-3 flex-1">
+                      <p className={`text-sm font-medium ${simulationResult.success ? 'text-green-800' : 'text-red-800'}`}>
+                        {simulationResult.message}
+                      </p>
+                      {simulationResult.data && (
+                        <div className={`mt-2 text-xs ${simulationResult.success ? 'text-green-800' : 'text-red-800'}`}>
+                          <p>Référence: {simulationResult.data.quoteNumber}</p>
+                          <p>Devis estimé: {simulationResult.data.estimatedQuote}</p>
+                        </div>
+                      )}
+                      {simulationResult.errors && (
+                        <ul className={`mt-2 text-xs ${simulationResult.success ? 'text-green-800' : 'text-red-800'} list-disc list-inside`}>
+                          {simulationResult.errors.map((error, index) => (
+                            <li key={index}>{error.message}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                    <div className="ml-auto pl-3">
+                      <button
+                        type="button"
+                        onClick={clearResult}
+                        className={`inline-flex ${simulationResult.success ? 'text-green-400' : 'text-red-400'} hover:opacity-75 focus:outline-none`}
+                      >
+                        <X className="h-5 w-5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
