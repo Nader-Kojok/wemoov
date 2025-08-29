@@ -111,7 +111,7 @@ const Hero = () => {
                 <div className="relative">
                   <div className="aspect-square rounded-3xl overflow-hidden bg-gradient-to-br from-[#E8EFFF] to-[#B8C5FF]/50 p-8">
                     <img 
-                      src="https://images.unsplash.com/photo-1449824913935-59a10b8d2000?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
+                      src="/hero_image.png" 
                       alt="Luxury VTC Car" 
                       className="w-full h-full object-cover rounded-2xl shadow-2xl"
                     />

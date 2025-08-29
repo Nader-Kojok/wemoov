@@ -49,7 +49,7 @@ const SettingsManagement: React.FC = () => {
       companyName: 'WeMoov Transport',
       email: 'admin@wemoov.com',
       phone: '+221 77 123 45 67',
-      address: 'Dakar, Sénégal',
+      address: 'Ouest Foire cité khanat n.107, Dakar – Sénégal',
       website: 'https://wemoov.com'
     },
     notifications: {

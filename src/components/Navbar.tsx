@@ -8,6 +8,7 @@ const Navbar = () => {
   const navItems = [
     { name: 'Accueil', href: '#home' },
     { name: 'À propos', href: '#about' },
+    { name: 'Notre Flotte', href: '#fleet' },
     { name: 'Nos Services', href: '#services' },
     { name: 'Tourisme', href: '#tourism' },
     { name: 'Services Entreprises', href: '#business' },
@@ -21,12 +22,11 @@ const Navbar = () => {
           {/* Logo */}
           <div className="flex-shrink-0">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#1E5EFF] to-[#B8C5FF] rounded-xl flex items-center justify-center">
-                <span className="text-white font-bold text-lg">W</span>
-              </div>
-              <h1 className="text-3xl font-black text-[#2D2D2D]">
-                We<span className="text-[#1E5EFF]">moov</span>
-              </h1>
+              <img 
+                src="/logo.png" 
+                alt="Wemoov Logo" 
+                className="h-12 w-auto"
+              />
             </div>
           </div>
 
@@ -49,7 +49,7 @@ const Navbar = () => {
           <div className="hidden lg:block">
             <Button className="bg-gradient-to-r from-[#1E5EFF] to-[#2D2D2D] hover:from-[#1E5EFF]/90 hover:to-[#2D2D2D]/90 text-white px-6 py-3 font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
               <Phone className="w-4 h-4 mr-2" />
-              +221 XX XXX XXXX
+              +221 33 801 82 82
             </Button>
           </div>
 
@@ -82,7 +82,7 @@ const Navbar = () => {
             <div className="pt-4">
               <Button className="bg-gradient-to-r from-[#1E5EFF] to-[#2D2D2D] hover:from-[#1E5EFF]/90 hover:to-[#2D2D2D]/90 text-white w-full py-3 font-semibold shadow-lg">
                 <Phone className="w-4 h-4 mr-2" />
-                +221 XX XXX XXXX
+                +221 33 801 82 82
               </Button>
             </div>
           </div>

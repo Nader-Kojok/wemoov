@@ -64,7 +64,7 @@ const Contact = () => {
                     </div>
                     <div className="flex-1">
                       <p className="font-bold text-[#2D2D2D] text-lg">Téléphone</p>
-                      <p className="text-[#2D2D2D]/70">+221 XX XXX XXXX</p>
+                      <p className="text-[#2D2D2D]/70">+221 33 801 82 82</p>
                     </div>
                     <Button size="sm" className="bg-[#1E5EFF] hover:bg-[#1E5EFF]/90">
                       Appeler
@@ -82,7 +82,7 @@ const Contact = () => {
                     </div>
                     <div className="flex-1">
                       <p className="font-bold text-[#2D2D2D] text-lg">Email</p>
-                      <p className="text-[#2D2D2D]/70">contact@wemoov.sn</p>
+                      <p className="text-[#2D2D2D]/70">contact@wemoovsenegal.com</p>
                     </div>
                     <Button size="sm" variant="outline" className="border-[#2D2D2D] text-[#2D2D2D] hover:bg-[#2D2D2D] hover:text-white">
                       Écrire
@@ -100,7 +100,7 @@ const Contact = () => {
                     </div>
                     <div className="flex-1">
                       <p className="font-bold text-[#2D2D2D] text-lg">Localisation</p>
-                      <p className="text-[#2D2D2D]/70">Dakar, Sénégal</p>
+                      <p className="text-[#2D2D2D]/70">Ouest Foire cité khanat n.107, Dakar – Sénégal</p>
                     </div>
                   </div>
                 </CardContent>

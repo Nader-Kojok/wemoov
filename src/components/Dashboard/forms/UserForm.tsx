@@ -221,7 +221,7 @@ const UserForm: React.FC<UserFormProps> = ({
           className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400 ${
             errors.phone ? 'border-red-300' : 'border-gray-300'
           }`}
-          placeholder="+221 XX XXX XX XX"
+          placeholder="+221 33 801 82 82"
           disabled={isLoading || isSubmitting}
         />
         {errors.phone && (

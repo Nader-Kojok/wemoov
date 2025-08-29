@@ -31,13 +31,12 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
           {/* Company Info */}
           <div className="space-y-6">
-            <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
-                <span className="text-white font-bold text-xl">W</span>
-              </div>
-              <h3 className="text-3xl font-black text-white">
-                We<span className="text-[#B8C5FF]">moov</span>
-              </h3>
+            <div className="flex items-center space-x-4 mb-6">
+              <img 
+                src="/logo.png" 
+                alt="Wemoov Logo" 
+                className="h-12 w-auto filter brightness-0 invert"
+              />
             </div>
             <p className="text-white/90 leading-relaxed">
               Votre partenaire de confiance pour tous vos déplacements au Sénégal. 
@@ -92,30 +91,30 @@ const Footer = () => {
           {/* Contact Info */}
           <div className="space-y-6">
             <h4 className="text-2xl font-bold text-white">Contact</h4>
-            <div className="space-y-4">
-              <div className="flex items-center space-x-4 bg-white/10 rounded-xl p-3 hover:bg-white/20 transition-all duration-300">
-                <div className="w-10 h-10 bg-[#B8C5FF]/20 rounded-full flex items-center justify-center">
-                  <Phone className="w-5 h-5 text-white" />
+            <div className="space-y-3">
+              <a href="tel:+221338018282" className="flex items-center space-x-3 hover:text-[#B8C5FF] transition-all duration-300 cursor-pointer group">
+                <div className="w-8 h-8 bg-[#B8C5FF]/20 rounded-full flex items-center justify-center flex-shrink-0 group-hover:bg-[#B8C5FF]/30">
+                  <Phone className="w-4 h-4 text-white" />
                 </div>
-                <span className="text-white font-medium">+221 XX XXX XXXX</span>
-              </div>
-              <div className="flex items-center space-x-4 bg-white/10 rounded-xl p-3 hover:bg-white/20 transition-all duration-300">
-                <div className="w-10 h-10 bg-[#B8C5FF]/20 rounded-full flex items-center justify-center">
-                  <Mail className="w-5 h-5 text-white" />
+                <span className="text-white font-medium text-sm">+221 33 801 82 82</span>
+              </a>
+              <a href="mailto:contact@wemoovsenegal.com" className="flex items-center space-x-3 hover:text-[#B8C5FF] transition-all duration-300 cursor-pointer group">
+                <div className="w-8 h-8 bg-[#B8C5FF]/20 rounded-full flex items-center justify-center flex-shrink-0 group-hover:bg-[#B8C5FF]/30">
+                  <Mail className="w-4 h-4 text-white" />
                 </div>
-                <span className="text-white font-medium">contact@wemoov.sn</span>
-              </div>
-              <div className="flex items-center space-x-4 bg-white/10 rounded-xl p-3 hover:bg-white/20 transition-all duration-300">
-                <div className="w-10 h-10 bg-[#B8C5FF]/20 rounded-full flex items-center justify-center">
-                  <MapPin className="w-5 h-5 text-white" />
+                <div className="text-white font-medium text-sm break-words">contact@wemoovsenegal.com</div>
+              </a>
+              <a href="https://maps.google.com/?q=Ouest+Foire+cité+khanat+n.107,+Dakar,+Sénégal" target="_blank" rel="noopener noreferrer" className="flex items-center space-x-3 hover:text-[#B8C5FF] transition-all duration-300 cursor-pointer group">
+                <div className="w-8 h-8 bg-[#B8C5FF]/20 rounded-full flex items-center justify-center flex-shrink-0 group-hover:bg-[#B8C5FF]/30">
+                  <MapPin className="w-4 h-4 text-white" />
                 </div>
-                <span className="text-white font-medium">Dakar, Sénégal</span>
-              </div>
-              <div className="flex items-center space-x-4 bg-white/10 rounded-xl p-3 hover:bg-white/20 transition-all duration-300">
-                <div className="w-10 h-10 bg-[#B8C5FF]/20 rounded-full flex items-center justify-center">
-                  <Clock className="w-5 h-5 text-white" />
+                <div className="text-white font-medium text-sm">Ouest Foire cité khanat n.107, Dakar – Sénégal</div>
+              </a>
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-[#B8C5FF]/20 rounded-full flex items-center justify-center flex-shrink-0">
+                  <Clock className="w-4 h-4 text-white" />
                 </div>
-                <span className="text-white font-medium">24h/24 - 7j/7</span>
+                <span className="text-white font-medium text-sm">24h/24 - 7j/7</span>
               </div>
             </div>
 

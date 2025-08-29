@@ -105,10 +105,12 @@ const DashboardLayout: React.FC = () => {
       >
         <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
           <div className="flex items-center">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">W</span>
-            </div>
-            <span className="ml-2 text-xl font-semibold text-gray-900">WeMoov Admin</span>
+            <img 
+              src="/logo.png" 
+              alt="Wemoov Logo" 
+              className="h-8 w-auto"
+            />
+            <span className="ml-2 text-xl font-semibold text-gray-900">Admin</span>
           </div>
           <button
             onClick={() => setSidebarOpen(false)}

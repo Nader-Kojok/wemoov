@@ -1,5 +1,6 @@
 import Navbar from './components/Navbar'
 import Hero from './components/Hero'
+import Fleet from './components/Fleet'
 import About from './components/About'
 import Services from './components/Services'
 import Tourism from './components/Tourism'
@@ -12,6 +13,7 @@ function App() {
     <div className="min-h-screen">
       <Navbar />
       <Hero />
+      <Fleet />
       <About />
       <Services />
       <Tourism />

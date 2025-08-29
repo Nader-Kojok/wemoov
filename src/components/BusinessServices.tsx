@@ -260,7 +260,7 @@ const BusinessServices = () => {
                       onChange={handleInputChange}
                       required
                       className="w-full px-4 py-3 border-2 border-[#1E5EFF]/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1E5EFF] focus:border-[#1E5EFF] transition-all duration-300 bg-white/80"
-                      placeholder="+221 XX XXX XXXX"
+                      placeholder="+221 33 801 82 82"
                     />
                   </div>
                 </div>
@@ -328,7 +328,7 @@ const BusinessServices = () => {
                     </div>
                     <div>
                       <p className="font-semibold text-white">Téléphone</p>
-                      <p className="text-white/80">+221 XX XXX XXXX</p>
+                      <p className="text-white/80">+221 33 801 82 82</p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-4 bg-white/10 rounded-xl p-4">

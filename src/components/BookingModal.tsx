@@ -860,7 +860,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, onOpenChange }
             <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
             <Input
               id="phone"
-              placeholder="+221 XX XXX XX XX"
+              placeholder="+221 33 801 82 82"
               value={bookingData.phone}
               onChange={(e) => updateBookingData('phone', e.target.value)}
               className="pl-10 h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
