@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Car, Users, Briefcase, Heart, Plane, MapPin, Clock, Shield, Star, CheckCircle, ArrowRight } from 'lucide-react'
+import { Car, Users, Briefcase, Heart, Plane, MapPin, Clock, Star, CheckCircle, ArrowRight } from 'lucide-react'
 
 const Services = () => {
   const services = [
@@ -58,35 +58,6 @@ const Services = () => {
       price: '8,000 FCFA/heure',
       duration: 'Minimum 2h',
       popular: false
-    }
-  ]
-
-  const destinations = [
-    { city: 'Dakar Centre', price: '15,000 FCFA', time: '45 min' },
-    { city: 'Plateau', price: '15,000 FCFA', time: '50 min' },
-    { city: 'Almadies', price: '18,000 FCFA', time: '40 min' },
-    { city: 'Guédiawaye', price: '12,000 FCFA', time: '30 min' },
-    { city: 'Pikine', price: '10,000 FCFA', time: '25 min' },
-    { city: 'Rufisque', price: '8,000 FCFA', time: '20 min' },
-    { city: 'Thiès', price: '25,000 FCFA', time: '1h 30min' },
-    { city: 'Mbour', price: '20,000 FCFA', time: '1h 15min' }
-  ]
-
-  const advantages = [
-    {
-      icon: Shield,
-      title: 'Sécurité Maximale',
-      description: 'Véhicules assurés et chauffeurs vérifiés et formés'
-    },
-    {
-      icon: Star,
-      title: 'Confort Premium',
-      description: 'Véhicules récents, climatisés et entretenus régulièrement'
-    },
-    {
-      icon: Clock,
-      title: 'Ponctualité Garantie',
-      description: 'Suivi des vols et adaptation aux horaires, respect strict des horaires'
     }
   ]
 

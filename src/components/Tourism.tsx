@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { MapPin, Clock, Users, Camera, Star, Calendar, CheckCircle, ArrowRight, Compass } from 'lucide-react'
+import { Clock, Users, Star, Calendar, CheckCircle, ArrowRight, Compass } from 'lucide-react'
 
 const Tourism = () => {
   const circuits = [
@@ -144,23 +144,7 @@ const Tourism = () => {
     }
   ]
 
-  const services = [
-    {
-      icon: Camera,
-      title: 'Photographie',
-      description: 'Service photo professionnel disponible'
-    },
-    {
-      icon: Users,
-      title: 'Guides experts',
-      description: 'Guides locaux francophones expérimentés'
-    },
-    {
-      icon: MapPin,
-      title: 'Sites authentiques',
-      description: 'Accès à des lieux hors des sentiers battus'
-    }
-  ]
+
 
   return (
     <section id="tourism" className="py-20 bg-gradient-to-br from-[#E8EFFF]/20 via-white to-[#B8C5FF]/10 relative overflow-hidden">
