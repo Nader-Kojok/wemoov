@@ -4,7 +4,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { MapPin, Navigation, Target } from 'lucide-react';
+import { MapPin, Navigation, Target, Plane } from 'lucide-react';
 
 // Set Mapbox access token
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
@@ -17,6 +17,7 @@ interface BookingMapSelectorProps {
   height?: string;
   className?: string;
   showDestination?: boolean;
+  showAirportButtons?: boolean;
 }
 
 const BookingMapSelector: React.FC<BookingMapSelectorProps> = ({
@@ -26,7 +27,8 @@ const BookingMapSelector: React.FC<BookingMapSelectorProps> = ({
   onDestinationChange,
   height = '500px',
   className = '',
-  showDestination = true
+  showDestination = true,
+  showAirportButtons = false
 }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -497,6 +499,22 @@ const BookingMapSelector: React.FC<BookingMapSelectorProps> = ({
             >
               <Navigation className="h-4 w-4" />
             </Button>
+            {showAirportButtons && (
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => {
+                  const airportAddress = 'Aéroport International Blaise Diagne (AIBD)';
+                  setLocalPickup(airportAddress);
+                  onPickupChange?.(airportAddress);
+                }}
+                className="shrink-0 border-blue-200 text-blue-600 hover:bg-blue-50"
+                title="Aéroport AIBD"
+              >
+                <Plane className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
 
@@ -558,6 +576,22 @@ const BookingMapSelector: React.FC<BookingMapSelectorProps> = ({
               >
                 <Navigation className="h-4 w-4" />
               </Button>
+              {showAirportButtons && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => {
+                    const airportAddress = 'Aéroport International Blaise Diagne (AIBD)';
+                    setLocalDestination(airportAddress);
+                    onDestinationChange?.(airportAddress);
+                  }}
+                  className="shrink-0 border-blue-200 text-blue-600 hover:bg-blue-50"
+                  title="Aéroport AIBD"
+                >
+                  <Plane className="h-4 w-4" />
+                </Button>
+              )}
             </div>
           </div>
         )}

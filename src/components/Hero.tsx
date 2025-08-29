@@ -1,10 +1,13 @@
 import * as React from 'react'
 import { Button } from '@/components/ui/button'
-import { BookingModal } from '@/components/BookingModal'
-import { Car, Shield, Clock, Star, ArrowRight, Play, Users, MapPin } from 'lucide-react'
+import HeroBookingTabs from '@/components/HeroBookingTabs'
+import HeroBookingModal from '@/components/HeroBookingModal'
+import { Car, Shield, Clock, Star, Play, Users, MapPin } from 'lucide-react'
 
 const Hero = () => {
   const [isBookingModalOpen, setIsBookingModalOpen] = React.useState(false)
+  const [bookingData, setBookingData] = React.useState<any>(null)
+  const [serviceType, setServiceType] = React.useState('')
   const [currentFeature, setCurrentFeature] = React.useState(0)
 
   const features = [
@@ -25,6 +28,12 @@ const Hero = () => {
     }
   ]
 
+  const handleContinueBooking = (selectedServiceType: string, formData: any) => {
+    setServiceType(selectedServiceType)
+    setBookingData(formData)
+    setIsBookingModalOpen(true)
+  }
+
   React.useEffect(() => {
     const interval = setInterval(() => {
       setCurrentFeature((prev) => (prev + 1) % features.length)
@@ -42,70 +51,20 @@ const Hero = () => {
           <div className="absolute top-1/2 left-1/3 w-24 h-24 bg-[#1E5EFF]/15 rounded-full blur-xl animate-pulse delay-500" />
         </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-20 sm:pt-28 lg:py-20">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center min-h-[calc(100vh-6rem)] sm:min-h-[calc(100vh-7rem)] lg:min-h-screen">
-            {/* Left Content - Deconstructed Layout */}
-            <div className="lg:col-span-7 space-y-8">
-              {/* Hero Text with Modern Typography */}
-              <div className="space-y-6">
-                <div className="inline-flex items-center px-4 py-2 bg-white/90 backdrop-blur-sm rounded-full border border-[#1E5EFF]/20 shadow-sm">
-                  <Star className="h-4 w-4 text-[#1E5EFF] mr-2" />
-                  <span className="text-sm font-medium text-[#2D2D2D]">Service Premium VTC</span>
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-20 sm:pt-36 lg:pt-32 lg:pb-20">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start min-h-[calc(100vh-6rem)] sm:min-h-[calc(100vh-7rem)] lg:min-h-screen">
+            {/* Left Side - Hero Text and Visual */}
+            <div className="lg:col-span-5 order-2 lg:order-1 space-y-6">
+              {/* Hero Text with Compact Typography */}
+               <div className="space-y-2">
+                  <h1 className="text-3xl md:text-4xl font-black leading-[0.85] text-[#2D2D2D]">
+                    <span className="block">Transport <span className="text-[#1E5EFF]">Premium</span></span>
+                    <span className="block text-2xl md:text-3xl font-light text-[#2D2D2D]/70">
+                      au Sénégal
+                    </span>
+                  </h1>
                 </div>
-                
-                <h1 className="text-5xl md:text-7xl font-black leading-[0.9] text-[#2D2D2D]">
-                  <span className="block">Transport</span>
-                  <span className="block text-[#1E5EFF]">
-                    Premium
-                  </span>
-                  <span className="block text-4xl md:text-5xl font-light text-[#2D2D2D]/70 mt-2">
-                    au Sénégal
-                  </span>
-                </h1>
-                
-                <p className="text-xl text-[#2D2D2D]/80 leading-relaxed max-w-lg">
-                  Découvrez l'excellence du transport avec chauffeur.{' '}
-                  <span className="font-semibold text-[#2D2D2D]">Sécurisé, confortable et disponible 24h/24.</span>
-                </p>
-              </div>
-
-              {/* Interactive CTA Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Button 
-                  size="lg" 
-                  onClick={() => setIsBookingModalOpen(true)}
-                  className="group bg-[#1E5EFF] hover:bg-[#1E5EFF]/90 text-white px-8 py-4 text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
-                >
-                  <Car className="mr-2 h-5 w-5 group-hover:rotate-12 transition-transform" />
-                  Réserver maintenant
-                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                </Button>
-                
-                <Button 
-                  variant="outline" 
-                  size="lg" 
-                  className="group border-2 border-[#1E5EFF]/30 text-[#2D2D2D] hover:bg-[#1E5EFF] hover:text-white hover:border-[#1E5EFF] px-8 py-4 text-lg font-semibold backdrop-blur-sm bg-white/90 transition-all duration-300"
-                >
-                  <Play className="mr-2 h-5 w-5 group-hover:scale-110 transition-transform" />
-                  Voir la démo
-                </Button>
-              </div>
-
-              {/* Trust Indicators */}
-              <div className="flex items-center space-x-6 pt-4">
-                 <div className="flex items-center space-x-2">
-                   <Shield className="h-5 w-5 text-[#1E5EFF]" />
-                   <span className="text-sm font-medium text-[#2D2D2D]/70">100% Sécurisé</span>
-                 </div>
-                 <div className="flex items-center space-x-2">
-                   <Clock className="h-5 w-5 text-[#1E5EFF]" />
-                   <span className="text-sm font-medium text-[#2D2D2D]/70">Service 24/7</span>
-                 </div>
-               </div>
-            </div>
-
-            {/* Right Side - Hero Visual */}
-            <div className="lg:col-span-5">
+              
               <div className="relative max-w-lg mx-auto">
                 {/* Main Hero Image */}
                 <div className="relative">
@@ -173,15 +132,51 @@ const Hero = () => {
                 </div>
               </div>
             </div>
+
+            {/* Right Content - Form */}
+            <div className="lg:col-span-7 space-y-8 order-1 lg:order-2">
+              {/* Hero Booking Tabs */}
+              <div className="mt-8">
+                <HeroBookingTabs onContinue={handleContinueBooking} />
+              </div>
+              
+              {/* Secondary CTA */}
+              <div className="flex justify-center">
+                <Button 
+                  variant="outline" 
+                  size="lg" 
+                  className="group border-2 border-[#1E5EFF]/30 text-[#2D2D2D] hover:bg-[#1E5EFF] hover:text-white hover:border-[#1E5EFF] px-8 py-4 text-lg font-semibold backdrop-blur-sm bg-white/90 transition-all duration-300"
+                >
+                  <Play className="mr-2 h-5 w-5 group-hover:scale-110 transition-transform" />
+                  Voir la démo
+                </Button>
+              </div>
+
+              {/* Trust Indicators */}
+              <div className="flex items-center space-x-6 pt-4">
+                 <div className="flex items-center space-x-2">
+                   <Shield className="h-5 w-5 text-[#1E5EFF]" />
+                   <span className="text-sm font-medium text-[#2D2D2D]/70">100% Sécurisé</span>
+                 </div>
+                 <div className="flex items-center space-x-2">
+                   <Clock className="h-5 w-5 text-[#1E5EFF]" />
+                   <span className="text-sm font-medium text-[#2D2D2D]/70">Service 24/7</span>
+                 </div>
+               </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Booking Modal */}
-      <BookingModal 
-        open={isBookingModalOpen} 
-        onOpenChange={setIsBookingModalOpen} 
-      />
+      {/* Hero Booking Modal */}
+      {bookingData && (
+        <HeroBookingModal 
+          open={isBookingModalOpen} 
+          onOpenChange={setIsBookingModalOpen}
+          serviceType={serviceType}
+          initialData={bookingData}
+        />
+      )}
     </>
   )
 }
