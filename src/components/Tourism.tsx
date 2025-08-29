@@ -6,89 +6,124 @@ import { MapPin, Clock, Users, Camera, Star, Calendar, CheckCircle, ArrowRight, 
 const Tourism = () => {
   const circuits = [
     {
-      title: 'Découverte de Dakar',
+      title: 'Pack Découverte Dakar Intra-Muros (4H)',
       duration: 'Demi-journée (4h)',
-      price: '25 000 FCFA',
+      price: '65 000 FCFA',
       maxPersons: 4,
-      rating: 4.8,
-      image: '🏛️',
-      description: 'Explorez les sites emblématiques de la capitale sénégalaise',
+      rating: 4.9,
+      image: '/renaissance.jpg',
+      description: 'Découvrez les trésors historiques et culturels de Dakar intra-muros',
       highlights: [
-        'Île de Gorée et Maison des Esclaves',
         'Monument de la Renaissance',
-        'Marché Sandaga',
-        'Plateau et quartier des affaires'
+        'Corniche Ouest',
+        'Mosquée de la Divinité',
+        'Plateau : Musée des Civilisations Noires, marché artisanal (Soumbédioune ou Kermel), Place de l\'Indépendance'
       ],
-      included: ['Transport climatisé', 'Guide francophone', 'Entrées monuments'],
-      popular: true
+      included: ['Transport climatisé', 'Guide francophone', 'Entrées monuments', 'Rafraîchissement offert'],
+      popular: true,
+      options: [
+        {
+          name: 'Activités dans les ateliers d\'art (samedi uniquement)',
+          price: '20 000 FCFA / personne'
+        }
+      ]
     },
     {
-      title: 'Lac Rose et Désert de Lompoul',
-      duration: 'Journée complète (8h)',
-      price: '45 000 FCFA',
+      title: 'Pack Évasion Lac Rose (4H)',
+      duration: 'Demi-journée (4h)',
+      price: '84 000 FCFA',
       maxPersons: 6,
       rating: 4.9,
-      image: '🌸',
-      description: 'Découvrez les merveilles naturelles du Sénégal',
+      image: '/lac_rose.jpg',
+      description: 'Évadez-vous vers les paysages uniques du Lac Rose et ses environs',
       highlights: [
-        'Lac Rose (Lac Retba)',
-        'Récolte de sel traditionnel',
-        'Désert de Lompoul',
-        'Balade à dos de chameau'
+        'Quad',
+        'Balade en pirogue',
+        'Promenade à dos de chameau',
+        'Visite du Village des Tortues'
       ],
-      included: ['Transport 4x4', 'Déjeuner traditionnel', 'Guide spécialisé', 'Activités incluses'],
-      popular: false
+      included: ['Transport climatisé', 'Guide francophone', 'Activités incluses', 'Rafraîchissement offert'],
+      popular: false,
+      options: [
+        {
+          name: 'Île de Gorée : Visite historique',
+          price: '20 000 FCFA / personne'
+        },
+        {
+          name: 'Réserve de Bandia : Safari',
+          price: '80 000 FCFA / personne'
+        },
+        {
+          name: 'Ranch de Bandia : Rencontre avec les lions',
+          price: '+23 000 FCFA / personne'
+        }
+      ]
     },
     {
-      title: 'Saint-Louis et Fleuve Sénégal',
-      duration: '2 jours / 1 nuit',
-      price: '85 000 FCFA',
-      maxPersons: 4,
-      rating: 4.7,
-      image: '🏰',
-      description: 'Plongez dans l\'histoire coloniale et la culture sénégalaise',
-      highlights: [
-        'Centre historique de Saint-Louis',
-        'Île de Saint-Louis (UNESCO)',
-        'Parc National des Oiseaux du Djoudj',
-        'Navigation sur le fleuve Sénégal'
-      ],
-      included: ['Transport aller-retour', 'Hébergement', 'Tous les repas', 'Excursions guidées'],
-      popular: false
-    },
-    {
-      title: 'Casamance Authentique',
-      duration: '3 jours / 2 nuits',
-      price: '120 000 FCFA',
-      maxPersons: 6,
-      rating: 4.9,
-      image: '🌴',
-      description: 'Immersion totale dans la culture casamançaise',
-      highlights: [
-        'Ziguinchor et ses marchés',
-        'Villages traditionnels Diola',
-        'Forêt de Basse Casamance',
-        'Artisanat local et gastronomie'
-      ],
-      included: ['Transport climatisé', 'Hébergement en campement', 'Tous les repas', 'Activités culturelles'],
-      popular: false
-    },
-    {
-      title: 'Saloum et Sine',
-      duration: 'Journée complète (10h)',
-      price: '55 000 FCFA',
+      title: 'Pack Horizon Île de Gorée (4H)',
+      duration: 'Demi-journée (4h)',
+      price: '60 000 FCFA',
       maxPersons: 8,
-      rating: 4.6,
-      image: '🐦',
-      description: 'Découverte du delta du Saloum et de ses îles',
+      rating: 4.8,
+      image: '/goree_island.jpeg',
+      description: 'Transfert en ferry + visite guidée de l\'île historique de Gorée',
       highlights: [
-        'Delta du Saloum (Réserve de biosphère)',
-        'Îles aux coquillages',
-        'Observation des oiseaux',
-        'Pêche traditionnelle'
+        'Église Saint-Charles Borromée',
+        'Maison des Esclaves',
+        'Mémorial de Gorée'
       ],
-      included: ['Transport et pirogue', 'Déjeuner sur l\'île', 'Guide naturaliste', 'Matériel d\'observation'],
+      included: ['Transport climatisé', 'Ferry aller-retour', 'Guide francophone', 'Rafraîchissement offert'],
       popular: false
+    },
+    {
+      title: 'Pack Aventure Parc Accro Baobab (5H)',
+      duration: 'Demi-journée (5h)',
+      price: '95 000 FCFA',
+      maxPersons: 6,
+      rating: 4.9,
+      image: '/accrobaobab.jpg',
+      description: 'Adrénaline garantie dans le parc d\'aventure au cœur des baobabs',
+      highlights: [
+        'Parcours accrobranche (20 ateliers - 3 niveaux)',
+        'Escalade sur baobab'
+      ],
+      included: ['Transport climatisé', 'Équipement de sécurité', 'Guide spécialisé', 'Rafraîchissement offert'],
+      popular: false,
+      options: [
+        {
+          name: 'Baptême de l\'air 10 min',
+          price: '45 000 FCFA / personne'
+        },
+        {
+          name: 'Baptême de l\'air 20 min (Forêt de Baobab & Lagune de la Somone)',
+          price: '70 000 FCFA / personne'
+        },
+        {
+          name: 'Baptême de l\'air 30 min (avec falaise de Popenguine)',
+          price: '85 000 FCFA / personne'
+        }
+      ]
+    },
+    {
+      title: 'Pack Globetrotter Journée Complète (7H)',
+      duration: 'Journée complète (7h)',
+      price: '185 000 FCFA',
+      maxPersons: 4,
+      rating: 5.0,
+      image: '/fathala.webp',
+      description: 'Immersion unique entre faune et nature dans les réserves du Sénégal',
+      highlights: [
+        'Fathala : Marche avec les lions',
+        'Sine Saloum : Pirogue en mangrove & observatoire d\'oiseaux'
+      ],
+      included: ['Transport 4x4', 'Déjeuner inclus', 'Guide spécialisé faune', 'Entrées réserves', 'Rafraîchissement offert'],
+      popular: true,
+      options: [
+        {
+          name: 'Initiation au tir (2h)',
+          price: '20 000 FCFA / personne'
+        }
+      ]
     },
     {
       title: 'Circuit Personnalisé',
@@ -139,7 +174,7 @@ const Tourism = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Header */}
         <div className="text-center mb-20">
-          <div className="inline-flex items-center px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full border border-[#1E5EFF]/20 shadow-sm mb-6">
+          <div className="inline-flex items-center px-4 py-2 bg-white/80 rounded-full border border-[#1E5EFF]/20 shadow-sm mb-6">
             <Compass className="h-4 w-4 text-[#1E5EFF] mr-2" />
             <span className="text-sm font-medium text-[#2D2D2D]">Tourisme & Circuits</span>
           </div>
@@ -154,9 +189,9 @@ const Tourism = () => {
         </div>
 
         {/* Circuits Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-20">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-20">
           {circuits.map((circuit, index) => (
-            <Card key={index} className={`bg-white/95 backdrop-blur-sm border border-[#1E5EFF]/10 shadow-lg hover:shadow-2xl transition-all duration-500 hover:scale-105 group ${
+            <Card key={index} className={`relative bg-white/95 border border-[#1E5EFF]/10 shadow-lg hover:shadow-2xl transition-all duration-500 hover:scale-105 group flex flex-col ${
               circuit.popular ? 'ring-2 ring-[#1E5EFF]/50' : ''
             }`}>
               {circuit.popular && (
@@ -167,7 +202,17 @@ const Tourism = () => {
                 </div>
               )}
               <CardHeader className="text-center pb-4">
-                <div className="text-6xl mb-4 group-hover:scale-110 transition-transform duration-300">{circuit.image}</div>
+                <div className="mb-4">
+                  {circuit.image.startsWith('/') ? (
+                    <img 
+                      src={circuit.image} 
+                      alt={circuit.title}
+                      className="w-full h-48 object-cover rounded-lg shadow-md"
+                    />
+                  ) : (
+                    <div className="text-6xl">{circuit.image}</div>
+                  )}
+                </div>
                 <CardTitle className="text-2xl font-bold text-[#2D2D2D] mb-3">{circuit.title}</CardTitle>
                 <p className="text-[#2D2D2D]/70 leading-relaxed">{circuit.description}</p>
                 <div className="flex items-center justify-center space-x-4 mt-4 text-sm">
@@ -185,29 +230,46 @@ const Tourism = () => {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div>
-                  <h4 className="font-bold text-[#2D2D2D] mb-3">Points forts :</h4>
-                  <ul className="space-y-2">
-                    {circuit.highlights.map((highlight, highlightIndex) => (
-                      <li key={highlightIndex} className="flex items-start space-x-3">
-                        <CheckCircle className="w-4 h-4 text-[#1E5EFF] mt-0.5 flex-shrink-0" />
-                        <span className="text-[#2D2D2D]/80 text-sm">{highlight}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-bold text-[#2D2D2D] mb-3">Inclus :</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {circuit.included.map((item, itemIndex) => (
-                      <Badge key={itemIndex} className="bg-[#B8C5FF]/20 text-[#2D2D2D] border-[#1E5EFF]/20 text-xs px-2 py-1">
-                        {item}
-                      </Badge>
-                    ))}
+              <CardContent className="space-y-6 flex-grow flex flex-col">
+                <div className="space-y-6 flex-grow">
+                  <div>
+                    <h4 className="font-bold text-[#2D2D2D] mb-3">Points forts :</h4>
+                    <ul className="space-y-2">
+                      {circuit.highlights.map((highlight, highlightIndex) => (
+                        <li key={highlightIndex} className="flex items-start space-x-3">
+                          <CheckCircle className="w-4 h-4 text-[#1E5EFF] mt-0.5 flex-shrink-0" />
+                          <span className="text-[#2D2D2D]/80 text-sm">{highlight}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
+                  <div>
+                    <h4 className="font-bold text-[#2D2D2D] mb-3">Inclus :</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {circuit.included.map((item, itemIndex) => (
+                        <Badge key={itemIndex} className="bg-[#B8C5FF]/20 text-[#2D2D2D] border-[#1E5EFF]/20 text-xs px-2 py-1">
+                          {item}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                  {circuit.options && circuit.options.length > 0 && (
+                    <div>
+                      <h4 className="font-bold text-[#2D2D2D] mb-3">Options supplémentaires :</h4>
+                      <div className="space-y-2">
+                        {circuit.options.map((option, optionIndex) => (
+                          <div key={optionIndex} className="flex items-center justify-between p-3 bg-[#E8EFFF]/50 rounded-lg border border-[#1E5EFF]/10">
+                            <span className="text-[#2D2D2D] text-sm font-medium">{option.name}</span>
+                            <Badge className="bg-[#1E5EFF] text-white text-xs px-2 py-1">
+                              +{option.price}
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div className="flex items-center justify-between pt-6 border-t border-[#1E5EFF]/10">
+                <div className="flex items-center justify-between pt-6 border-t border-[#1E5EFF]/10 mt-auto">
                   <div>
                     <p className="text-2xl font-bold text-[#1E5EFF]">{circuit.price}</p>
                     <p className="text-xs text-[#2D2D2D]/60">par personne</p>
@@ -222,32 +284,7 @@ const Tourism = () => {
           ))}
         </div>
 
-        {/* Services */}
-        <div className="mb-20">
-          <div className="text-center mb-16">
-            <h3 className="text-4xl md:text-5xl font-black text-[#2D2D2D] mb-6">
-              Services
-              <span className="block text-[#1E5EFF]">inclus</span>
-            </h3>
-            <p className="text-xl text-[#2D2D2D]/80 max-w-3xl mx-auto leading-relaxed">
-              Profitez de services complémentaires pour enrichir votre expérience touristique.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {services.map((service, index) => {
-              const IconComponent = service.icon
-              return (
-                <Card key={index} className="bg-white/95 backdrop-blur-sm border border-[#1E5EFF]/10 shadow-lg hover:shadow-2xl transition-all duration-500 hover:scale-105 group text-center p-8">
-                  <div className="w-20 h-20 bg-gradient-to-br from-[#1E5EFF] to-[#B8C5FF] rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                    <IconComponent className="w-10 h-10 text-white" />
-                  </div>
-                  <h4 className="text-2xl font-bold text-[#2D2D2D] mb-4">{service.title}</h4>
-                  <p className="text-[#2D2D2D]/80 leading-relaxed">{service.description}</p>
-                </Card>
-              )
-            })}
-          </div>
-        </div>
+       
 
         {/* CTA Section */}
         <div className="relative">

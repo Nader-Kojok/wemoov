@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Dialog, DialogContent } from "@/components/ui/dialog"
+import { Dialog, DialogContent } from "@/components/ui/enhanced-dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -905,31 +905,34 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, onOpenChange }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md mx-auto h-screen md:h-[95vh] md:max-h-[800px] p-0 overflow-hidden md:rounded-lg">
+      <DialogContent 
+        animationVariant="elegant"
+        className="max-w-md mx-auto h-screen md:h-[95vh] md:max-h-[800px] p-0 overflow-hidden md:rounded-xl shadow-2xl border-0 bg-white/95 backdrop-blur-sm"
+      >
         <div className="flex flex-col h-full">
-          {/* Simplified Header */}
-          <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+          {/* Enhanced Header */}
+          <div className="bg-white/90 backdrop-blur-sm border-b border-gray-200/50 sticky top-0 z-10">
             <div className="px-4 pt-4 pb-2 relative">
               <button
                 onClick={() => onOpenChange(false)}
-                className="absolute left-4 top-4 p-2 hover:bg-gray-100 rounded-full transition-colors"
+                className="absolute left-4 top-4 p-2 hover:bg-gray-100/80 rounded-full transition-all duration-200 hover:scale-105 active:scale-95"
                 aria-label="Fermer"
               >
-                <X className="h-5 w-5 text-gray-500" />
+                <X className="h-5 w-5 text-gray-500 hover:text-gray-700 transition-colors" />
               </button>
-              <h2 className="text-lg font-semibold text-gray-900 text-center mb-3 pr-12">Réserver votre transport</h2>
+              <h2 className="text-lg font-semibold text-gray-900 text-center mb-3 pr-12 animate-in fade-in-0 slide-in-from-top-2 duration-300">Réserver votre transport</h2>
             </div>
             
-            {/* Step Progress - only show if service is selected */}
+            {/* Enhanced Step Progress - only show if service is selected */}
             {selectedService && (
-              <div className="px-4 pb-3">
+              <div className="px-4 pb-3 animate-in fade-in-0 slide-in-from-top-1 duration-300 delay-100">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs text-gray-600">{steps[currentStep]?.title}</span>
-                  <span className="text-xs text-gray-500">{currentStep + 1} / {maxSteps}</span>
+                  <span className="text-xs font-medium text-gray-700">{steps[currentStep]?.title}</span>
+                  <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">{currentStep + 1} / {maxSteps}</span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-1">
+                <div className="w-full bg-gray-200/70 rounded-full h-2 overflow-hidden">
                   <div 
-                    className="bg-blue-600 h-1 rounded-full transition-all duration-300" 
+                    className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-500 ease-out shadow-sm" 
                     style={{ width: `${((currentStep + 1) / maxSteps) * 100}%` }}
                   ></div>
                 </div>
@@ -937,15 +940,15 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, onOpenChange }
             )}
           </div>
 
-          {/* Content */}
-          <div className="flex-1 p-4 bg-gray-50">
-            <div className="h-full flex flex-col justify-center">
+          {/* Enhanced Content */}
+          <div className="flex-1 p-4 bg-gradient-to-b from-gray-50/50 to-gray-100/30">
+            <div className="h-full flex flex-col justify-center animate-in fade-in-0 slide-in-from-bottom-2 duration-400 delay-200">
               {renderCurrentStepContent()}
             </div>
           </div>
 
-          {/* Footer with Navigation */}
-          <div className="p-4 border-t bg-white shadow-lg">
+          {/* Enhanced Footer with Navigation */}
+          <div className="p-4 border-t border-gray-200/50 bg-white/95 backdrop-blur-sm shadow-lg">
             <div className="flex gap-3">
               {currentStep > 0 && (
                 <Button 

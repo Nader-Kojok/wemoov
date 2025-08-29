@@ -168,59 +168,7 @@ const Services = () => {
           })}
         </div>
 
-        {/* Destinations & Tarifs */}
-        <div className="mb-20">
-          <div className="text-center mb-16">
-            <h3 className="text-4xl md:text-5xl font-black text-[#2D2D2D] mb-6">
-              Tarifs par
-              <span className="block text-[#1E5EFF]">destination</span>
-            </h3>
-            <p className="text-xl text-[#2D2D2D]/80 max-w-3xl mx-auto leading-relaxed">
-              Découvrez nos tarifs fixes depuis/vers l'aéroport AIBD pour les principales destinations.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {destinations.map((destination, index) => (
-              <Card key={index} className="bg-white/95 backdrop-blur-sm border border-[#1E5EFF]/10 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 group">
-                <CardContent className="p-6 text-center">
-                  <div className="w-12 h-12 bg-[#1E5EFF] rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
-                    <MapPin className="w-6 h-6 text-white" />
-                  </div>
-                  <h4 className="font-bold text-[#2D2D2D] text-lg mb-2">{destination.city}</h4>
-                  <p className="text-2xl font-bold text-[#1E5EFF] mb-2">{destination.price}</p>
-                  <p className="text-sm text-[#2D2D2D]/60">{destination.time}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
 
-        {/* Advantages */}
-        <div className="mb-20">
-          <div className="text-center mb-16">
-            <h3 className="text-4xl md:text-5xl font-black text-[#2D2D2D] mb-6">
-              Pourquoi choisir
-              <span className="block text-[#1E5EFF]">Wemoov ?</span>
-            </h3>
-            <p className="text-xl text-[#2D2D2D]/80 max-w-3xl mx-auto leading-relaxed">
-              Nos engagements pour vous garantir une expérience de transport exceptionnelle.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {advantages.map((advantage, index) => {
-              const IconComponent = advantage.icon
-              return (
-                <Card key={index} className="bg-white/95 backdrop-blur-sm border border-[#1E5EFF]/10 shadow-lg hover:shadow-2xl transition-all duration-500 hover:scale-105 group text-center p-8">
-                  <div className="w-20 h-20 bg-gradient-to-br from-[#1E5EFF] to-[#B8C5FF] rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                    <IconComponent className="w-10 h-10 text-white" />
-                  </div>
-                  <h4 className="text-2xl font-bold text-[#2D2D2D] mb-4">{advantage.title}</h4>
-                  <p className="text-[#2D2D2D]/80 leading-relaxed">{advantage.description}</p>
-                </Card>
-              )
-            })}
-          </div>
-        </div>
 
         {/* CTA Section */}
         <div className="relative">
