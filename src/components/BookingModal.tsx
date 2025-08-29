@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent } from "@/components/ui/card"
 // Removed Tabs import as we're using service selection cards instead
-import { MapPin, Calendar, Clock, Users, Phone, Mail, User, Target, Car, Plane, Timer } from "lucide-react"
+import { MapPin, Calendar, Clock, Users, Phone, Mail, User, Target, Car, Plane, Timer, X } from "lucide-react"
 import BookingMapSelector from './BookingMapSelector'
 
 interface BookingModalProps {
@@ -887,12 +887,19 @@ export const BookingModal: React.FC<BookingModalProps> = ({ open, onOpenChange }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md mx-auto h-[95vh] max-h-[800px] p-0 overflow-hidden">
+      <DialogContent className="max-w-md mx-auto h-screen md:h-[95vh] md:max-h-[800px] p-0 overflow-hidden md:rounded-lg">
         <div className="flex flex-col h-full">
           {/* Simplified Header */}
           <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-            <div className="px-4 pt-4 pb-2">
-              <h2 className="text-lg font-semibold text-gray-900 text-center mb-3">Réserver votre transport</h2>
+            <div className="px-4 pt-4 pb-2 relative">
+              <button
+                onClick={() => onOpenChange(false)}
+                className="absolute left-4 top-4 p-2 hover:bg-gray-100 rounded-full transition-colors"
+                aria-label="Fermer"
+              >
+                <X className="h-5 w-5 text-gray-500" />
+              </button>
+              <h2 className="text-lg font-semibold text-gray-900 text-center mb-3 pr-12">Réserver votre transport</h2>
             </div>
             
             {/* Step Progress - only show if service is selected */}

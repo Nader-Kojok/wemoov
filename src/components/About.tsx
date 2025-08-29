@@ -1,114 +1,133 @@
 import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { Users, Car, Star, Clock, Shield, Headphones, DollarSign, CheckCircle } from 'lucide-react'
 
 const About = () => {
   const stats = [
     {
-      icon: 'fas fa-users',
+      icon: <Users className="h-6 w-6" />,
       number: '500+',
-      label: 'Clients satisfaits'
+      label: 'Clients satisfaits',
+      color: 'bg-[#1E5EFF]'
     },
     {
-      icon: 'fas fa-car',
+      icon: <Car className="h-6 w-6" />,
       number: '50+',
-      label: 'Véhicules disponibles'
+      label: 'Véhicules disponibles',
+      color: 'bg-[#2D2D2D]'
     },
     {
-      icon: 'fas fa-star',
+      icon: <Star className="h-6 w-6" />,
       number: '4.9/5',
-      label: 'Note moyenne'
+      label: 'Note moyenne',
+      color: 'bg-[#1E5EFF]'
     },
     {
-      icon: 'fas fa-clock',
+      icon: <Clock className="h-6 w-6" />,
       number: '24/7',
-      label: 'Service disponible'
+      label: 'Service disponible',
+      color: 'bg-[#B8C5FF]'
     }
   ]
 
   const features = [
     {
-      icon: 'fas fa-shield-alt',
-      title: 'Sécurité',
-      description: 'Véhicules assurés et chauffeurs professionnels'
+      icon: <Shield className="h-8 w-8" />,
+      title: 'Sécurité Garantie',
+      description: 'Véhicules assurés et chauffeurs professionnels certifiés pour votre tranquillité d\'esprit.'
     },
     {
-      icon: 'fas fa-money-bill-wave',
-      title: 'Tarifs transparents',
-      description: 'Prix fixes sans surprise'
+      icon: <DollarSign className="h-8 w-8" />,
+      title: 'Tarifs Transparents',
+      description: 'Prix fixes annoncés à l\'avance, sans frais cachés ni mauvaises surprises.'
     },
     {
-      icon: 'fas fa-headset',
+      icon: <Headphones className="h-8 w-8" />,
       title: 'Support 24/7',
-      description: 'Assistance disponible à tout moment'
+      description: 'Équipe d\'assistance disponible à tout moment pour répondre à vos besoins.'
     }
   ]
 
   return (
-    <section id="about" className="py-20 relative overflow-hidden">
-      {/* Background Image */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{
-          backgroundImage: 'url(https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2069&q=80)'
-        }}
-      />
-      <div className="absolute inset-0 bg-white/90" />
+    <section id="about" className="py-20 bg-gradient-to-br from-[#E8EFFF] via-white to-[#B8C5FF]/20 relative overflow-hidden">
+      {/* Floating Elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-10 right-10 w-40 h-40 bg-[#1E5EFF]/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-20 left-10 w-32 h-32 bg-[#B8C5FF]/10 rounded-full blur-2xl" />
+      </div>
       
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Header */}
-        <div className="text-center mb-16">
-          <Badge className="mb-4 bg-[#1E5EFF]/10 text-[#1E5EFF] border-[#1E5EFF]/20">
-            À propos
-          </Badge>
-          <h2 className="text-4xl font-bold text-[#2D2D2D] mb-6">
-            Votre partenaire mobilité au Sénégal
+        <div className="text-center mb-20">
+          <div className="inline-flex items-center px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full border border-[#1E5EFF]/20 shadow-sm mb-6">
+            <CheckCircle className="h-4 w-4 text-[#1E5EFF] mr-2" />
+            <span className="text-sm font-medium text-[#2D2D2D]">À propos de WeMoov</span>
+          </div>
+          <h2 className="text-5xl md:text-6xl font-black text-[#2D2D2D] mb-6 leading-tight">
+            Votre partenaire
+            <span className="block text-[#1E5EFF]">mobilité</span>
+            <span className="block text-3xl md:text-4xl font-light text-[#2D2D2D]/70 mt-2">au Sénégal</span>
           </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            Service VTC premium avec des chauffeurs professionnels et des véhicules de qualité pour tous vos déplacements.
+          <p className="text-xl text-[#2D2D2D]/80 max-w-3xl mx-auto leading-relaxed">
+            Service VTC premium avec des chauffeurs professionnels et des véhicules de qualité 
+            <span className="font-semibold text-[#2D2D2D]">pour tous vos déplacements.</span>
           </p>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-20">
           {stats.map((stat, index) => (
-            <Card key={index} className="bg-white/80 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
+            <Card key={index} className="bg-white/90 backdrop-blur-sm border border-[#1E5EFF]/10 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 group">
               <CardContent className="p-6 text-center">
-                <div className="w-12 h-12 bg-[#1E5EFF] rounded-full flex items-center justify-center mx-auto mb-3">
-                  <i className={`${stat.icon} text-white text-lg`}></i>
+                <div className={`w-14 h-14 ${stat.color} rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300`}>
+                  <div className="text-white">
+                    {stat.icon}
+                  </div>
                 </div>
-                <div className="text-2xl font-bold text-[#1E5EFF] mb-1">{stat.number}</div>
-                <div className="text-sm text-gray-600">{stat.label}</div>
+                <div className="text-3xl font-bold text-[#2D2D2D] mb-2">{stat.number}</div>
+                <div className="text-sm text-[#2D2D2D]/70 font-medium">{stat.label}</div>
               </CardContent>
             </Card>
           ))}
         </div>
 
         {/* Features */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
           {features.map((feature, index) => (
-            <Card key={index} className="bg-white/80 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
-              <CardContent className="p-8 text-center">
-                <div className="w-16 h-16 bg-[#1E5EFF] rounded-full flex items-center justify-center mx-auto mb-4">
-                  <i className={`${feature.icon} text-white text-2xl`}></i>
+            <Card key={index} className="bg-white/95 backdrop-blur-sm border border-[#1E5EFF]/10 shadow-lg hover:shadow-2xl transition-all duration-500 hover:scale-105 group">
+              <CardContent className="p-8">
+                <div className="w-16 h-16 bg-gradient-to-br from-[#1E5EFF] to-[#B8C5FF] rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                  <div className="text-white">
+                    {feature.icon}
+                  </div>
                 </div>
-                <h3 className="text-xl font-semibold text-[#2D2D2D] mb-3">{feature.title}</h3>
-                <p className="text-gray-600">{feature.description}</p>
+                <h3 className="text-2xl font-bold text-[#2D2D2D] mb-4">{feature.title}</h3>
+                <p className="text-[#2D2D2D]/80 leading-relaxed">{feature.description}</p>
               </CardContent>
             </Card>
           ))}
         </div>
 
         {/* Mission Statement */}
-        <Card className="bg-[#1E5EFF] border-0 shadow-xl">
-          <CardContent className="p-12 text-center text-white">
-            <i className="fas fa-quote-left text-3xl mb-6 opacity-50"></i>
-            <h3 className="text-2xl font-bold mb-4">Notre Mission</h3>
-            <p className="text-lg text-[#B8C5FF] max-w-3xl mx-auto leading-relaxed">
-              Faciliter vos déplacements au Sénégal en vous proposant des solutions de transport 
-              sûres, confortables et professionnelles. Votre satisfaction est notre priorité.
-            </p>
-          </CardContent>
-        </Card>
+        <div className="relative">
+          <Card className="bg-gradient-to-r from-[#1E5EFF] to-[#2D2D2D] border-0 shadow-2xl overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-[#1E5EFF]/90 to-[#2D2D2D]/90" />
+            <CardContent className="relative p-12 md:p-16 text-center text-white">
+              <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-8">
+                <Star className="h-10 w-10 text-white" />
+              </div>
+              <h3 className="text-3xl md:text-4xl font-bold mb-6">Notre Mission</h3>
+              <p className="text-xl text-white/90 max-w-4xl mx-auto leading-relaxed">
+                Faciliter vos déplacements au Sénégal en vous proposant des solutions de transport 
+                <span className="font-semibold text-white">sûres, confortables et professionnelles.</span> 
+                Votre satisfaction est notre priorité absolue.
+              </p>
+              
+              {/* Decorative Elements */}
+              <div className="absolute top-4 right-4 w-24 h-24 bg-white/5 rounded-full" />
+              <div className="absolute bottom-4 left-4 w-16 h-16 bg-white/5 rounded-full" />
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </section>
   )

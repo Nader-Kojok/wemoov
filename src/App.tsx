@@ -1,9 +1,8 @@
 import Navbar from './components/Navbar'
 import Hero from './components/Hero'
 import About from './components/About'
-import CarRental from './components/CarRental'
+import Services from './components/Services'
 import Tourism from './components/Tourism'
-import AirportShuttle from './components/AirportShuttle'
 import BusinessServices from './components/BusinessServices'
 import Contact from './components/Contact'
 import Footer from './components/Footer'
@@ -14,9 +13,8 @@ function App() {
       <Navbar />
       <Hero />
       <About />
-      <CarRental />
+      <Services />
       <Tourism />
-      <AirportShuttle />
       <BusinessServices />
       <Contact />
       <Footer />

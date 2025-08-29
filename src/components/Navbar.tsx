@@ -8,30 +8,36 @@ const Navbar = () => {
   const navItems = [
     { name: 'Accueil', href: '#home' },
     { name: 'À propos', href: '#about' },
-    { name: 'Location avec chauffeur', href: '#car-rental' },
+    { name: 'Nos Services', href: '#services' },
     { name: 'Tourisme', href: '#tourism' },
-    { name: 'Navette Aéroport', href: '#airport' },
     { name: 'Services Entreprises', href: '#business' },
     { name: 'Contact', href: '#contact' }
   ]
 
   return (
-    <nav className="bg-white shadow-lg fixed w-full top-0 z-50">
+    <nav className="bg-white/95 backdrop-blur-md shadow-xl border-b border-[#1E5EFF]/10 fixed w-full top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex justify-between items-center h-20">
           {/* Logo */}
           <div className="flex-shrink-0">
-            <h1 className="text-2xl font-bold text-[#1E5EFF]">Wemoov</h1>
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#1E5EFF] to-[#B8C5FF] rounded-xl flex items-center justify-center">
+                <span className="text-white font-bold text-lg">W</span>
+              </div>
+              <h1 className="text-3xl font-black text-[#2D2D2D]">
+                We<span className="text-[#1E5EFF]">moov</span>
+              </h1>
+            </div>
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:block">
-            <div className="ml-10 flex items-baseline space-x-4">
+          <div className="hidden lg:block">
+            <div className="flex items-center space-x-1">
               {navItems.map((item) => (
                 <a
                   key={item.name}
                   href={item.href}
-                  className="text-gray-700 hover:text-[#1E5EFF] px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+                  className="text-[#2D2D2D]/80 hover:text-[#1E5EFF] hover:bg-[#E8EFFF]/50 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 hover:scale-105"
                 >
                   {item.name}
                 </a>
@@ -40,20 +46,20 @@ const Navbar = () => {
           </div>
 
           {/* Contact Button */}
-          <div className="hidden md:block">
-            <Button className="bg-[#1E5EFF] hover:bg-[#1E5EFF]/90 text-white">
+          <div className="hidden lg:block">
+            <Button className="bg-gradient-to-r from-[#1E5EFF] to-[#2D2D2D] hover:from-[#1E5EFF]/90 hover:to-[#2D2D2D]/90 text-white px-6 py-3 font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
               <Phone className="w-4 h-4 mr-2" />
               +221 XX XXX XXXX
             </Button>
           </div>
 
           {/* Mobile menu button */}
-          <div className="md:hidden">
+          <div className="lg:hidden">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="text-gray-700 hover:text-[#1E5EFF] focus:outline-none focus:text-[#1E5EFF]"
+              className="w-10 h-10 bg-[#E8EFFF] hover:bg-[#1E5EFF] text-[#1E5EFF] hover:text-white rounded-xl flex items-center justify-center transition-all duration-300 hover:scale-105"
             >
-              {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
           </div>
         </div>
@@ -61,20 +67,20 @@ const Navbar = () => {
 
       {/* Mobile Navigation */}
       {isMenuOpen && (
-        <div className="md:hidden">
-          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white shadow-lg">
+        <div className="lg:hidden">
+          <div className="px-4 pt-4 pb-6 space-y-2 bg-white/95 backdrop-blur-md shadow-2xl border-t border-[#1E5EFF]/10">
             {navItems.map((item) => (
               <a
                 key={item.name}
                 href={item.href}
-                className="text-gray-700 hover:text-[#1E5EFF] block px-3 py-2 rounded-md text-base font-medium transition-colors duration-200"
+                className="text-[#2D2D2D]/80 hover:text-[#1E5EFF] hover:bg-[#E8EFFF]/50 block px-4 py-3 rounded-xl font-semibold transition-all duration-300 hover:scale-105"
                 onClick={() => setIsMenuOpen(false)}
               >
                 {item.name}
               </a>
             ))}
-            <div className="px-3 py-2">
-              <Button className="bg-[#1E5EFF] hover:bg-[#1E5EFF]/90 text-white w-full">
+            <div className="pt-4">
+              <Button className="bg-gradient-to-r from-[#1E5EFF] to-[#2D2D2D] hover:from-[#1E5EFF]/90 hover:to-[#2D2D2D]/90 text-white w-full py-3 font-semibold shadow-lg">
                 <Phone className="w-4 h-4 mr-2" />
                 +221 XX XXX XXXX
               </Button>

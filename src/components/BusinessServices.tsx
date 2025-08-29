@@ -1,7 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Building, Users, Calendar, Clock, Star, CheckCircle, Mail, Phone } from 'lucide-react'
+import { Building, Users, Calendar, Clock, Star, CheckCircle, Mail, Phone, Send } from 'lucide-react'
 import { useState } from 'react'
 
 const BusinessServices = () => {
@@ -98,55 +97,62 @@ const BusinessServices = () => {
   }
 
   return (
-    <section id="business" className="py-20 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="business" className="py-20 bg-gradient-to-br from-[#E8EFFF]/10 via-white to-[#B8C5FF]/5 relative overflow-hidden">
+      {/* Floating Elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-20 right-20 w-40 h-40 bg-[#1E5EFF]/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-10 left-10 w-32 h-32 bg-[#B8C5FF]/10 rounded-full blur-2xl" />
+        <div className="absolute top-1/2 right-1/3 w-24 h-24 bg-[#1E5EFF]/5 rounded-full blur-xl" />
+      </div>
+      
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Header */}
-        <div className="text-center mb-16">
-          <Badge className="mb-4 bg-[#E8EFFF] text-[#1E5EFF] border-[#1E5EFF]">
-            Services aux entreprises
-          </Badge>
-          <h2 className="text-4xl font-bold text-[#2D2D2D] mb-6">
-            Solutions transport pour entreprises
+        <div className="text-center mb-20">
+          <div className="inline-flex items-center px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full border border-[#1E5EFF]/20 shadow-sm mb-6">
+            <Building className="h-4 w-4 text-[#1E5EFF] mr-2" />
+            <span className="text-sm font-medium text-[#2D2D2D]">Services aux entreprises</span>
+          </div>
+          <h2 className="text-5xl md:text-6xl font-black text-[#2D2D2D] mb-6 leading-tight">
+            Solutions transport
+            <span className="block text-[#1E5EFF]">pour entreprises</span>
           </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-xl text-[#2D2D2D]/80 max-w-3xl mx-auto leading-relaxed">
             Optimisez la mobilité de votre entreprise avec nos solutions sur mesure. 
-            Transport du personnel, chauffeurs dédiés et services VIP.
+            <span className="font-semibold text-[#2D2D2D]">Transport du personnel, chauffeurs dédiés et services VIP.</span>
           </p>
         </div>
 
         {/* Services Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-20">
           {services.map((service, index) => {
             const IconComponent = service.icon
             return (
-              <Card key={index} className="hover:shadow-lg transition-shadow duration-300">
-                <CardHeader>
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-[#E8EFFF] rounded-lg flex items-center justify-center">
-                      <IconComponent className="w-6 h-6 text-[#1E5EFF]" />
+              <Card key={index} className="bg-white/95 backdrop-blur-sm border border-[#1E5EFF]/10 shadow-lg hover:shadow-2xl transition-all duration-500 hover:scale-105 group">
+                <CardHeader className="pb-4">
+                  <div className="flex items-start space-x-4">
+                    <div className="w-16 h-16 bg-gradient-to-br from-[#1E5EFF] to-[#B8C5FF] rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                      <IconComponent className="w-8 h-8 text-white" />
                     </div>
-                    <div>
-                      <CardTitle className="text-xl text-[#2D2D2D]">{service.title}</CardTitle>
-                      <p className="text-gray-600 text-sm">{service.description}</p>
+                    <div className="flex-1">
+                      <CardTitle className="text-2xl font-bold text-[#2D2D2D] mb-2">{service.title}</CardTitle>
+                      <p className="text-[#2D2D2D]/70 leading-relaxed">{service.description}</p>
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <ul className="space-y-2">
+                <CardContent className="space-y-6">
+                  <ul className="space-y-3">
                     {service.features.map((feature, featureIndex) => (
-                      <li key={featureIndex} className="flex items-center space-x-2">
-                        <div className="w-2 h-2 bg-[#1E5EFF] rounded-full"></div>
-                        <span className="text-sm text-gray-600">{feature}</span>
+                      <li key={featureIndex} className="flex items-center space-x-3">
+                        <CheckCircle className="w-5 h-5 text-[#1E5EFF] flex-shrink-0" />
+                        <span className="text-[#2D2D2D]/80">{feature}</span>
                       </li>
                     ))}
                   </ul>
-                  <div className="flex items-center justify-between pt-4 border-t">
-                    <div>
-                      <p className="text-lg font-bold text-[#1E5EFF]">{service.price}</p>
+                  <div className="pt-6 border-t border-[#1E5EFF]/10">
+                    <div className="text-center">
+                      <p className="text-xl font-bold text-[#1E5EFF] mb-2">{service.price}</p>
+                      <p className="text-sm text-[#2D2D2D]/60">Demandez un devis personnalisé</p>
                     </div>
-                    <Button className="bg-[#1E5EFF] hover:bg-[#1E5EFF]/90 text-white">
-                      Devis gratuit
-                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -155,12 +161,13 @@ const BusinessServices = () => {
         </div>
 
         {/* Advantages */}
-        <div className="mb-16">
-          <div className="text-center mb-12">
-            <h3 className="text-3xl font-bold text-[#2D2D2D] mb-4">
-              Pourquoi nous choisir ?
+        <div className="mb-20">
+          <div className="text-center mb-16">
+            <h3 className="text-4xl md:text-5xl font-black text-[#2D2D2D] mb-6">
+              Pourquoi nous
+              <span className="block text-[#1E5EFF]">choisir ?</span>
             </h3>
-            <p className="text-gray-600 max-w-2xl mx-auto">
+            <p className="text-xl text-[#2D2D2D]/80 max-w-3xl mx-auto leading-relaxed">
               Les avantages de faire confiance à Wemoov pour vos besoins de transport d'entreprise.
             </p>
           </div>
@@ -168,13 +175,13 @@ const BusinessServices = () => {
             {advantages.map((advantage, index) => {
               const IconComponent = advantage.icon
               return (
-                <div key={index} className="text-center space-y-4">
-                  <div className="w-16 h-16 bg-[#1E5EFF] rounded-full flex items-center justify-center mx-auto">
-                    <IconComponent className="w-8 h-8 text-white" />
+                <Card key={index} className="bg-white/95 backdrop-blur-sm border border-[#1E5EFF]/10 shadow-lg hover:shadow-2xl transition-all duration-500 hover:scale-105 group text-center p-8">
+                  <div className="w-20 h-20 bg-gradient-to-br from-[#1E5EFF] to-[#B8C5FF] rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
+                    <IconComponent className="w-10 h-10 text-white" />
                   </div>
-                  <h4 className="text-xl font-semibold text-[#2D2D2D]">{advantage.title}</h4>
-                  <p className="text-gray-600">{advantage.description}</p>
-                </div>
+                  <h4 className="text-2xl font-bold text-[#2D2D2D] mb-4">{advantage.title}</h4>
+                  <p className="text-[#2D2D2D]/80 leading-relaxed">{advantage.description}</p>
+                </Card>
               )
             })}
           </div>
@@ -183,20 +190,23 @@ const BusinessServices = () => {
         {/* Quote Form */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Form */}
-          <Card className="p-8">
-            <CardHeader className="px-0 pt-0">
-              <CardTitle className="text-2xl text-[#2D2D2D] mb-2">
+          <Card className="bg-white/95 backdrop-blur-sm border border-[#1E5EFF]/10 shadow-xl p-8">
+            <CardHeader className="px-0 pt-0 text-center">
+              <div className="w-16 h-16 bg-[#1E5EFF] rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <Send className="h-8 w-8 text-white" />
+              </div>
+              <CardTitle className="text-3xl font-bold text-[#2D2D2D] mb-4">
                 Demande de devis gratuit
               </CardTitle>
-              <p className="text-gray-600">
+              <p className="text-[#2D2D2D]/70 leading-relaxed">
                 Remplissez ce formulaire et nous vous contacterons sous 24h avec une proposition personnalisée.
               </p>
             </CardHeader>
             <CardContent className="px-0">
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-[#2D2D2D]">
                       Nom de l'entreprise *
                     </label>
                     <input
@@ -205,12 +215,12 @@ const BusinessServices = () => {
                       value={formData.company}
                       onChange={handleInputChange}
                       required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1E5EFF] focus:border-transparent"
+                      className="w-full px-4 py-3 border-2 border-[#1E5EFF]/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1E5EFF] focus:border-[#1E5EFF] transition-all duration-300 bg-white/80"
                       placeholder="Votre entreprise"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-[#2D2D2D]">
                       Personne de contact *
                     </label>
                     <input
@@ -219,14 +229,14 @@ const BusinessServices = () => {
                       value={formData.contact}
                       onChange={handleInputChange}
                       required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1E5EFF] focus:border-transparent"
+                      className="w-full px-4 py-3 border-2 border-[#1E5EFF]/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1E5EFF] focus:border-[#1E5EFF] transition-all duration-300 bg-white/80"
                       placeholder="Nom et prénom"
                     />
                   </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-[#2D2D2D]">
                       Email *
                     </label>
                     <input
@@ -235,12 +245,12 @@ const BusinessServices = () => {
                       value={formData.email}
                       onChange={handleInputChange}
                       required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1E5EFF] focus:border-transparent"
+                      className="w-full px-4 py-3 border-2 border-[#1E5EFF]/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1E5EFF] focus:border-[#1E5EFF] transition-all duration-300 bg-white/80"
                       placeholder="contact@entreprise.com"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-[#2D2D2D]">
                       Téléphone *
                     </label>
                     <input
@@ -249,13 +259,13 @@ const BusinessServices = () => {
                       value={formData.phone}
                       onChange={handleInputChange}
                       required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1E5EFF] focus:border-transparent"
+                      className="w-full px-4 py-3 border-2 border-[#1E5EFF]/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1E5EFF] focus:border-[#1E5EFF] transition-all duration-300 bg-white/80"
                       placeholder="+221 XX XXX XXXX"
                     />
                   </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-[#2D2D2D]">
                     Service souhaité *
                   </label>
                   <select
@@ -263,7 +273,7 @@ const BusinessServices = () => {
                     value={formData.service}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1E5EFF] focus:border-transparent"
+                    className="w-full px-4 py-3 border-2 border-[#1E5EFF]/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1E5EFF] focus:border-[#1E5EFF] transition-all duration-300 bg-white/80"
                   >
                     <option value="">Sélectionnez un service</option>
                     <option value="transport-personnel">Transport du personnel</option>
@@ -273,8 +283,8 @@ const BusinessServices = () => {
                     <option value="autre">Autre (préciser dans les détails)</option>
                   </select>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-[#2D2D2D]">
                     Détails de votre besoin
                   </label>
                   <textarea
@@ -282,14 +292,15 @@ const BusinessServices = () => {
                     value={formData.details}
                     onChange={handleInputChange}
                     rows={4}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1E5EFF] focus:border-transparent"
+                    className="w-full px-4 py-3 border-2 border-[#1E5EFF]/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1E5EFF] focus:border-[#1E5EFF] transition-all duration-300 resize-none bg-white/80"
                     placeholder="Décrivez vos besoins spécifiques, fréquence, nombre de personnes, etc."
                   />
                 </div>
                 <Button 
                   type="submit" 
-                  className="w-full bg-[#1E5EFF] hover:bg-[#1E5EFF]/90 text-white py-3"
+                  className="w-full bg-gradient-to-r from-[#1E5EFF] to-[#2D2D2D] hover:from-[#1E5EFF]/90 hover:to-[#2D2D2D]/90 text-white py-4 text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
                 >
+                  <Send className="mr-2 h-5 w-5" />
                   Envoyer ma demande de devis
                 </Button>
               </form>
@@ -298,58 +309,68 @@ const BusinessServices = () => {
 
           {/* Contact Info */}
           <div className="space-y-8">
-            <Card className="p-6 bg-[#E8EFFF]">
+            <Card className="bg-gradient-to-br from-[#1E5EFF] to-[#B8C5FF] border-0 shadow-xl p-8 text-white">
               <CardContent className="p-0">
-                <h3 className="text-xl font-bold text-[#2D2D2D] mb-4">
+                <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-6">
+                  <Phone className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold mb-4">
                   Besoin d'aide ?
                 </h3>
-                <p className="text-gray-600 mb-6">
+                <p className="text-white/90 mb-6 leading-relaxed">
                   Notre équipe commerciale est à votre disposition pour vous accompagner 
                   dans le choix de la solution la plus adaptée à vos besoins.
                 </p>
                 <div className="space-y-4">
-                  <div className="flex items-center space-x-3">
-                    <Phone className="w-5 h-5 text-[#1E5EFF]" />
+                  <div className="flex items-center space-x-4 bg-white/10 rounded-xl p-4">
+                    <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                      <Phone className="w-5 h-5 text-white" />
+                    </div>
                     <div>
-                      <p className="font-semibold text-[#2D2D2D]">Téléphone</p>
-                      <p className="text-gray-600">+221 XX XXX XXXX</p>
+                      <p className="font-semibold text-white">Téléphone</p>
+                      <p className="text-white/80">+221 XX XXX XXXX</p>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-3">
-                    <Mail className="w-5 h-5 text-[#1E5EFF]" />
+                  <div className="flex items-center space-x-4 bg-white/10 rounded-xl p-4">
+                    <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                      <Mail className="w-5 h-5 text-white" />
+                    </div>
                     <div>
-                      <p className="font-semibold text-[#2D2D2D]">Email</p>
-                      <p className="text-gray-600">entreprises@wemoov.sn</p>
+                      <p className="font-semibold text-white">Email</p>
+                      <p className="text-white/80">entreprises@wemoov.sn</p>
                     </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="p-6">
+            <Card className="bg-white/95 backdrop-blur-sm border border-[#1E5EFF]/10 shadow-xl p-8">
               <CardContent className="p-0">
-                <h3 className="text-xl font-bold text-[#2D2D2D] mb-4">
+                <div className="w-16 h-16 bg-[#1E5EFF] rounded-2xl flex items-center justify-center mb-6">
+                  <Star className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-[#2D2D2D] mb-4">
                   Nos références
                 </h3>
-                <p className="text-gray-600 mb-4">
+                <p className="text-[#2D2D2D]/80 mb-6 leading-relaxed">
                   Nous accompagnons déjà de nombreuses entreprises sénégalaises :
                 </p>
-                <ul className="space-y-2">
-                  <li className="flex items-center space-x-2">
-                    <CheckCircle className="w-4 h-4 text-green-500" />
-                    <span className="text-sm text-gray-600">Banques et institutions financières</span>
+                <ul className="space-y-3">
+                  <li className="flex items-center space-x-3">
+                    <CheckCircle className="w-5 h-5 text-[#1E5EFF]" />
+                    <span className="text-[#2D2D2D]/80">Banques et institutions financières</span>
                   </li>
-                  <li className="flex items-center space-x-2">
-                    <CheckCircle className="w-4 h-4 text-green-500" />
-                    <span className="text-sm text-gray-600">Entreprises de télécommunications</span>
+                  <li className="flex items-center space-x-3">
+                    <CheckCircle className="w-5 h-5 text-[#1E5EFF]" />
+                    <span className="text-[#2D2D2D]/80">Entreprises de télécommunications</span>
                   </li>
-                  <li className="flex items-center space-x-2">
-                    <CheckCircle className="w-4 h-4 text-green-500" />
-                    <span className="text-sm text-gray-600">Organisations internationales</span>
+                  <li className="flex items-center space-x-3">
+                    <CheckCircle className="w-5 h-5 text-[#1E5EFF]" />
+                    <span className="text-[#2D2D2D]/80">Organisations internationales</span>
                   </li>
-                  <li className="flex items-center space-x-2">
-                    <CheckCircle className="w-4 h-4 text-green-500" />
-                    <span className="text-sm text-gray-600">Hôtels et groupes hôteliers</span>
+                  <li className="flex items-center space-x-3">
+                    <CheckCircle className="w-5 h-5 text-[#1E5EFF]" />
+                    <span className="text-[#2D2D2D]/80">Hôtels et groupes hôteliers</span>
                   </li>
                 </ul>
               </CardContent>

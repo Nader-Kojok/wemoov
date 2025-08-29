@@ -1,55 +1,70 @@
-import { Phone, Mail, MapPin, Clock, Facebook, Instagram, Twitter } from 'lucide-react'
+import { Phone, Mail, MapPin, Clock, Facebook, Instagram, Twitter, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 const Footer = () => {
   const services = [
-    'Location avec chauffeur',
-    'Navette aéroport',
-    'Circuits touristiques',
-    'Services entreprises',
-    'Transport VIP'
+    'Transport familial',
+    'Transfert aéroport',
+    'Transport professionnel',
+    'Occasions spéciales',
+    'Services entreprises'
   ]
 
   const quickLinks = [
     { name: 'À propos', href: '#about' },
     { name: 'Nos services', href: '#services' },
     { name: 'Tourisme', href: '#tourism' },
-    { name: 'Contact', href: '#contact' },
-    { name: 'Devis gratuit', href: '#quote' }
+    { name: 'Services Entreprises', href: '#business' },
+    { name: 'Contact', href: '#contact' }
   ]
 
   return (
-    <footer className="bg-[#2D2D2D] text-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+    <footer className="bg-gradient-to-b from-[#2D2D2D] to-[#1E5EFF] text-white relative overflow-hidden">
+      {/* Floating Elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-10 left-10 w-32 h-32 bg-white/5 rounded-full blur-2xl" />
+        <div className="absolute bottom-20 right-20 w-40 h-40 bg-[#B8C5FF]/10 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 right-1/4 w-24 h-24 bg-white/5 rounded-full blur-xl" />
+      </div>
+      
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-16 relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
           {/* Company Info */}
-          <div className="space-y-4">
-            <h3 className="text-2xl font-bold text-[#1E5EFF]">Wemoov</h3>
-            <p className="text-gray-300 text-sm leading-relaxed">
+          <div className="space-y-6">
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
+                <span className="text-white font-bold text-xl">W</span>
+              </div>
+              <h3 className="text-3xl font-black text-white">
+                We<span className="text-[#B8C5FF]">moov</span>
+              </h3>
+            </div>
+            <p className="text-white/90 leading-relaxed">
               Votre partenaire de confiance pour tous vos déplacements au Sénégal. 
-              Service VTC professionnel, sécurisé et disponible 24h/24.
+              <span className="font-semibold text-white">Service VTC professionnel, sécurisé et disponible 24h/24.</span>
             </p>
-            <div className="flex space-x-4">
-              <Button variant="ghost" size="icon" className="text-gray-300 hover:text-[#1E5EFF]">
+            <div className="flex space-x-3">
+              <Button variant="ghost" size="icon" className="w-12 h-12 bg-white/10 hover:bg-white/20 text-white hover:text-[#B8C5FF] rounded-xl transition-all duration-300 hover:scale-110">
                 <Facebook className="w-5 h-5" />
               </Button>
-              <Button variant="ghost" size="icon" className="text-gray-300 hover:text-[#1E5EFF]">
+              <Button variant="ghost" size="icon" className="w-12 h-12 bg-white/10 hover:bg-white/20 text-white hover:text-[#B8C5FF] rounded-xl transition-all duration-300 hover:scale-110">
                 <Instagram className="w-5 h-5" />
               </Button>
-              <Button variant="ghost" size="icon" className="text-gray-300 hover:text-[#1E5EFF]">
+              <Button variant="ghost" size="icon" className="w-12 h-12 bg-white/10 hover:bg-white/20 text-white hover:text-[#B8C5FF] rounded-xl transition-all duration-300 hover:scale-110">
                 <Twitter className="w-5 h-5" />
               </Button>
             </div>
           </div>
 
           {/* Services */}
-          <div className="space-y-4">
-            <h4 className="text-lg font-semibold text-white">Nos Services</h4>
-            <ul className="space-y-2">
+          <div className="space-y-6">
+            <h4 className="text-2xl font-bold text-white">Nos Services</h4>
+            <ul className="space-y-3">
               {services.map((service, index) => (
                 <li key={index}>
-                  <a href="#" className="text-gray-300 hover:text-[#1E5EFF] text-sm transition-colors duration-200">
-                    {service}
+                  <a href="#" className="text-white/80 hover:text-[#B8C5FF] flex items-center space-x-2 transition-all duration-300 hover:translate-x-2 group">
+                    <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <span>{service}</span>
                   </a>
                 </li>
               ))}
@@ -57,16 +72,17 @@ const Footer = () => {
           </div>
 
           {/* Quick Links */}
-          <div className="space-y-4">
-            <h4 className="text-lg font-semibold text-white">Liens Rapides</h4>
-            <ul className="space-y-2">
+          <div className="space-y-6">
+            <h4 className="text-2xl font-bold text-white">Liens Rapides</h4>
+            <ul className="space-y-3">
               {quickLinks.map((link, index) => (
                 <li key={index}>
                   <a 
                     href={link.href} 
-                    className="text-gray-300 hover:text-[#1E5EFF] text-sm transition-colors duration-200"
+                    className="text-white/80 hover:text-[#B8C5FF] flex items-center space-x-2 transition-all duration-300 hover:translate-x-2 group"
                   >
-                    {link.name}
+                    <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <span>{link.name}</span>
                   </a>
                 </li>
               ))}
@@ -74,47 +90,50 @@ const Footer = () => {
           </div>
 
           {/* Contact Info */}
-          <div className="space-y-4">
-            <h4 className="text-lg font-semibold text-white">Contact</h4>
-            <div className="space-y-3">
-              <div className="flex items-center space-x-3">
-                <Phone className="w-4 h-4 text-[#1E5EFF]" />
-                <span className="text-gray-300 text-sm">+221 XX XXX XXXX</span>
+          <div className="space-y-6">
+            <h4 className="text-2xl font-bold text-white">Contact</h4>
+            <div className="space-y-4">
+              <div className="flex items-center space-x-4 bg-white/10 rounded-xl p-3 hover:bg-white/20 transition-all duration-300">
+                <div className="w-10 h-10 bg-[#B8C5FF]/20 rounded-full flex items-center justify-center">
+                  <Phone className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-white font-medium">+221 XX XXX XXXX</span>
               </div>
-              <div className="flex items-center space-x-3">
-                <Mail className="w-4 h-4 text-[#1E5EFF]" />
-                <span className="text-gray-300 text-sm">contact@wemoov.sn</span>
+              <div className="flex items-center space-x-4 bg-white/10 rounded-xl p-3 hover:bg-white/20 transition-all duration-300">
+                <div className="w-10 h-10 bg-[#B8C5FF]/20 rounded-full flex items-center justify-center">
+                  <Mail className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-white font-medium">contact@wemoov.sn</span>
               </div>
-              <div className="flex items-center space-x-3">
-                <MapPin className="w-4 h-4 text-[#1E5EFF]" />
-                <span className="text-gray-300 text-sm">Dakar, Sénégal</span>
+              <div className="flex items-center space-x-4 bg-white/10 rounded-xl p-3 hover:bg-white/20 transition-all duration-300">
+                <div className="w-10 h-10 bg-[#B8C5FF]/20 rounded-full flex items-center justify-center">
+                  <MapPin className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-white font-medium">Dakar, Sénégal</span>
               </div>
-              <div className="flex items-center space-x-3">
-                <Clock className="w-4 h-4 text-[#1E5EFF]" />
-                <span className="text-gray-300 text-sm">24h/24 - 7j/7</span>
+              <div className="flex items-center space-x-4 bg-white/10 rounded-xl p-3 hover:bg-white/20 transition-all duration-300">
+                <div className="w-10 h-10 bg-[#B8C5FF]/20 rounded-full flex items-center justify-center">
+                  <Clock className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-white font-medium">24h/24 - 7j/7</span>
               </div>
             </div>
 
-            {/* Special Offer */}
-            <div className="bg-[#1E5EFF] rounded-lg p-4 mt-6">
-              <h5 className="font-semibold text-white mb-2">Tarif Fixe Aéroport</h5>
-              <p className="text-[#B8C5FF] text-sm mb-2">Dakar ↔ AIBD</p>
-              <p className="text-white font-bold">15 000 FCFA</p>
-            </div>
+
           </div>
         </div>
 
         {/* Bottom Bar */}
-        <div className="border-t border-gray-700 mt-12 pt-8">
-          <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-            <p className="text-gray-400 text-sm">
+        <div className="border-t border-white/20 mt-16 pt-8">
+          <div className="flex flex-col md:flex-row justify-between items-center space-y-6 md:space-y-0">
+            <p className="text-white/80 font-medium">
               © 2024 Wemoov. Tous droits réservés.
             </p>
-            <div className="flex space-x-6">
-              <a href="#" className="text-gray-400 hover:text-[#1E5EFF] text-sm transition-colors duration-200">
+            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-8">
+              <a href="#" className="text-white/80 hover:text-[#B8C5FF] font-medium transition-all duration-300 hover:scale-105">
                 Conditions d'utilisation
               </a>
-              <a href="#" className="text-gray-400 hover:text-[#1E5EFF] text-sm transition-colors duration-200">
+              <a href="#" className="text-white/80 hover:text-[#B8C5FF] font-medium transition-all duration-300 hover:scale-105">
                 Politique de confidentialité
               </a>
             </div>
