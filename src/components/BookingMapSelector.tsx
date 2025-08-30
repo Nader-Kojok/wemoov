@@ -3,7 +3,7 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { Label } from './ui/label';
+
 import { MapPin, Navigation, Target, Plane } from 'lucide-react';
 
 // Set Mapbox access token
@@ -444,13 +444,12 @@ const BookingMapSelector: React.FC<BookingMapSelectorProps> = ({
       <div className="grid grid-cols-1 gap-2">
         {/* Pickup Location */}
         <div className="space-y-2">
-          <Label htmlFor="pickup">Point de départ</Label>
           <div className="flex gap-2">
             <div className="relative flex-1">
               <MapPin className="absolute left-3 top-3 h-4 w-4 text-green-600" />
               <Input
                 id="pickup"
-                placeholder="Tapez pour rechercher..."
+                placeholder="Point de départ"
                 value={pickupSearchQuery || localPickup}
                 onChange={handlePickupSearchChange}
                 onFocus={() => {
@@ -521,13 +520,12 @@ const BookingMapSelector: React.FC<BookingMapSelectorProps> = ({
         {/* Destination - Only show if showDestination is true */}
         {showDestination && (
           <div className="space-y-2">
-            <Label htmlFor="destination">Destination</Label>
             <div className="flex gap-2">
               <div className="relative flex-1">
                 <Target className="absolute left-3 top-3 h-4 w-4 text-red-600" />
                 <Input
                   id="destination"
-                  placeholder="Tapez pour rechercher..."
+                  placeholder="Destination"
                   value={destinationSearchQuery || localDestination}
                   onChange={handleDestinationSearchChange}
                   onFocus={() => {

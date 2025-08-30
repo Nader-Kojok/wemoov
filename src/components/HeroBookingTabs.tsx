@@ -21,6 +21,7 @@ interface FormData {
   hourlyDuration: string
   rentalType: string
   dailyDuration: string
+  withDriver: boolean
 }
 
 const HeroBookingTabs: React.FC<HeroBookingTabsProps> = ({ onContinue }) => {
@@ -34,10 +35,58 @@ const HeroBookingTabs: React.FC<HeroBookingTabsProps> = ({ onContinue }) => {
     passengers: '1',
     hourlyDuration: '2',
     rentalType: 'daily',
-    dailyDuration: '1'
+    dailyDuration: '1',
+    withDriver: true
   })
 
-  const updateFormData = (field: keyof FormData, value: string) => {
+  // Réinitialiser les données spécifiques lors du changement d'onglet
+  React.useEffect(() => {
+    setFormData(prev => {
+      // Conserver les données communes (localisation, date, heure, passagers)
+      const commonData = {
+        pickupLocation: prev.pickupLocation,
+        destination: activeTab === 'course' ? prev.destination : '', // Garder destination seulement pour course
+        date: prev.date,
+        time: prev.time,
+        passengers: prev.passengers
+      }
+      
+      // Réinitialiser les données spécifiques selon le type de service
+      switch (activeTab) {
+        case 'course':
+          return {
+            ...commonData,
+            destination: prev.destination, // Garder la destination pour course
+            hourlyDuration: '2',
+            rentalType: 'daily',
+            dailyDuration: '1',
+            withDriver: true
+          }
+        case 'hourly':
+          return {
+            ...commonData,
+            destination: '', // Pas de destination pour hourly
+            hourlyDuration: prev.hourlyDuration || '2',
+            rentalType: 'daily',
+            dailyDuration: '1',
+            withDriver: true
+          }
+        case 'rental':
+          return {
+            ...commonData,
+            destination: '', // Pas de destination pour rental
+            hourlyDuration: '2',
+            rentalType: prev.rentalType || 'daily',
+            dailyDuration: prev.dailyDuration || '1',
+            withDriver: prev.withDriver !== undefined ? prev.withDriver : true
+          }
+        default:
+          return prev
+      }
+    })
+  }, [activeTab])
+
+  const updateFormData = (field: keyof FormData, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
@@ -63,11 +112,7 @@ const HeroBookingTabs: React.FC<HeroBookingTabsProps> = ({ onContinue }) => {
 
   const renderLocationForm = (showDestination: boolean = true) => (
     <div className="space-y-4">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center space-x-2">
-          <MapPin className="h-4 w-4 text-[#1E5EFF]" />
-          <h3 className="font-medium text-[#2D2D2D] text-sm">Itinéraire</h3>
-        </div>
+      <div className="flex justify-end mb-3">
         <Button
           type="button"
           variant="ghost"
@@ -92,12 +137,11 @@ const HeroBookingTabs: React.FC<HeroBookingTabsProps> = ({ onContinue }) => {
       ) : (
         <div className="space-y-3">
           <div className="space-y-1">
-              <Label htmlFor="pickup" className="text-xs font-medium text-[#2D2D2D]/70">Point de départ</Label>
               <div className="relative">
                 <MapPin className="absolute left-3 top-3 h-4 w-4 text-[#2D2D2D]/40" />
                 <Input
                   id="pickup"
-                  placeholder="Adresse de départ"
+                  placeholder="Point de départ"
                   value={formData.pickupLocation}
                   onChange={(e) => updateFormData('pickupLocation', e.target.value)}
                   className="pl-10 h-10 text-sm border-[#1E5EFF]/20 focus:border-[#1E5EFF] focus:ring-[#1E5EFF]/20"
@@ -120,12 +164,11 @@ const HeroBookingTabs: React.FC<HeroBookingTabsProps> = ({ onContinue }) => {
 
           {showDestination && (
               <div className="space-y-1">
-                <Label htmlFor="destination" className="text-xs font-medium text-[#2D2D2D]/70">Destination</Label>
                 <div className="relative">
                   <Target className="absolute left-3 top-3 h-4 w-4 text-[#2D2D2D]/40" />
                   <Input
                     id="destination"
-                    placeholder="Entrez votre destination"
+                    placeholder="Destination"
                     value={formData.destination}
                     onChange={(e) => updateFormData('destination', e.target.value)}
                     className="pl-10 h-10 text-sm border-[#1E5EFF]/20 focus:border-[#1E5EFF] focus:ring-[#1E5EFF]/20"
@@ -219,18 +262,6 @@ const HeroBookingTabs: React.FC<HeroBookingTabsProps> = ({ onContinue }) => {
 
   const renderRentalOptions = () => (
     <div className="space-y-3">
-      <div className="bg-[#E8EFFF] border border-[#1E5EFF]/20 rounded-lg p-3">
-        <div className="flex items-start space-x-2">
-          <Timer className="h-4 w-4 text-[#1E5EFF] mt-0.5" />
-          <div className="flex-1">
-            <h4 className="text-sm font-medium text-[#1E5EFF] mb-1">Location longue durée</h4>
-            <p className="text-xs text-[#1E5EFF]/80">
-              Véhicule avec chauffeur pour une durée prolongée. Le chauffeur gère tous les déplacements.
-            </p>
-          </div>
-        </div>
-      </div>
-      
       <div className="space-y-1">
         <Label className="text-xs font-medium text-[#2D2D2D]/70">Type de location</Label>
         <Select value={formData.rentalType} onValueChange={(value) => updateFormData('rentalType', value)}>
@@ -264,6 +295,24 @@ const HeroBookingTabs: React.FC<HeroBookingTabsProps> = ({ onContinue }) => {
             ))}
           </SelectContent>
         </Select>
+      </div>
+      
+      <div className="space-y-2">
+        <Label className="text-xs font-medium text-[#2D2D2D]/70">Options de service</Label>
+        <div className="space-y-2">
+          <label className="flex items-center space-x-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={formData.withDriver}
+              onChange={(e) => updateFormData('withDriver', e.target.checked)}
+              className="w-4 h-4 text-[#1E5EFF] border-[#1E5EFF]/20 rounded focus:ring-[#1E5EFF]/20 focus:ring-2"
+            />
+            <div className="flex-1">
+              <span className="text-sm font-medium text-[#2D2D2D]">Avec chauffeur</span>
+              <p className="text-xs text-[#2D2D2D]/60">Frais supplémentaires appliqués</p>
+            </div>
+          </label>
+        </div>
       </div>
     </div>
   )
@@ -300,7 +349,6 @@ const HeroBookingTabs: React.FC<HeroBookingTabsProps> = ({ onContinue }) => {
             <div className="space-y-4">
               <div className="text-center mb-4">
                 <h3 className="font-semibold text-[#2D2D2D] mb-1">Commander une course</h3>
-                <p className="text-sm text-[#2D2D2D]/70">Transport ponctuel d'un point A à un point B</p>
               </div>
               {renderLocationForm(true)}
             </div>
@@ -310,7 +358,6 @@ const HeroBookingTabs: React.FC<HeroBookingTabsProps> = ({ onContinue }) => {
             <div className="space-y-4">
               <div className="text-center mb-4">
                 <h3 className="font-semibold text-[#2D2D2D] mb-1">Location à l'heure</h3>
-                <p className="text-sm text-[#2D2D2D]/70">Réservez un chauffeur pour plusieurs heures</p>
               </div>
               {renderLocationForm(false)}
               {renderHourlyOptions()}
@@ -321,7 +368,6 @@ const HeroBookingTabs: React.FC<HeroBookingTabsProps> = ({ onContinue }) => {
             <div className="space-y-4">
               <div className="text-center mb-4">
                 <h3 className="font-semibold text-[#2D2D2D] mb-1">Location longue durée</h3>
-                <p className="text-sm text-[#2D2D2D]/70">Location à la journée, semaine ou plus</p>
               </div>
               {renderLocationForm(false)}
               {renderRentalOptions()}
